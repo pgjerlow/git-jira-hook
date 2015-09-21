@@ -1,3 +1,8 @@
+#Ignore IDE specific files and folders
+.idea
+*.iml
+
+
 *.class
 
 # Mobile Tools for Java (J2ME)
