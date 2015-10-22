@@ -1,0 +1,2 @@
+# Ensure that all sh files have the correct file endings
+*.sh eol=lf
