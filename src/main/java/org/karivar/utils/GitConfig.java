@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
@@ -22,7 +23,7 @@ import java.util.Scanner;
  * git configuration
  */
 public class GitConfig {
-    private final Logger logger = LoggerFactory.getLogger(GitConfig.class);
+    private static final Logger logger = LoggerFactory.getLogger(GitConfig.class);
 
     private static final String JIRA_USERNAME = "githook.jira.username";
     private static final String JIRA_PASSWORD = "githookjira.password";
@@ -35,6 +36,14 @@ public class GitConfig {
      * @return the Jira username
      */
     public static Optional<String> getJiraUsername() {
+
+        try {
+            return getValueFromGitConfig(JIRA_USERNAME, true);
+        } catch (InterruptedException e) {
+            logger.error("InterruptedException", e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
+        }
         return Optional.empty();
     }
 
@@ -43,6 +52,14 @@ public class GitConfig {
      * @return the Jira password
      */
     public static Optional<String> getJiraEncodedPassword() {
+
+        try {
+            return getValueFromGitConfig(JIRA_PASSWORD, true);
+        } catch (InterruptedException e) {
+            logger.error("InterruptedException", e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
+        }
         return Optional.empty();
     }
 
@@ -51,6 +68,14 @@ public class GitConfig {
      * @return the Jira address
      */
     public static Optional<String> getJiraAddress() {
+
+        try {
+            return getValueFromGitConfig(JIRA_ADDRESS, true);
+        } catch (InterruptedException e) {
+            logger.error("InterruptedException", e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
+        }
         return Optional.empty();
     }
 
@@ -59,6 +84,13 @@ public class GitConfig {
      * @return the language settings
      */
     public static Optional<String> getLanguageSettings() {
+        try {
+            return getValueFromGitConfig(GIT_HOOK_LANGUAGE_SETTINGS, true);
+        } catch (InterruptedException e) {
+            logger.error("InterruptedException", e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
+        }
         return Optional.empty();
     }
 
@@ -66,12 +98,21 @@ public class GitConfig {
      * Gets a list of potential Jira projects from the local git configuration
      * @return the Jira projects
      */
-    public static Optional<List<String>> getJiraProjects() {
-        return Optional.empty();
+    public static List<Optional<String>> getJiraProjects() {
+
+        List<Optional<String>> projects = new ArrayList<>();
+        try {
+            projects.add(getValueFromGitConfig(JIRA_PROJECTS, true));
+        } catch (InterruptedException e) {
+            logger.error("InterruptedException", e);
+        } catch (IOException e) {
+            logger.error("IOException", e);
+        }
+        return projects;
     }
 
 
-    private Optional<String> getValueFromGitConfig(String key, boolean isGlobalElement)
+    private static Optional<String> getValueFromGitConfig(String key, boolean isGlobalElement)
             throws InterruptedException, IOException {
         String command = "git config ";
 
@@ -79,21 +120,19 @@ public class GitConfig {
             command += "--global ";
         }
 
-        command += "key";
-
-        ProcessBuilder builder = new ProcessBuilder(command);
-        Process process = builder.start();
-
-        int errorCode = process.waitFor();
-        logger.debug("Execution of {} got the return code {}", command, errorCode);
+        command += key;
+        Runtime runtime = Runtime.getRuntime();
+        Process process = runtime.exec(command);
+        int errorCode =process.waitFor();
 
         if (errorCode == 0) {
             return output(process.getInputStream());
         }
+
         return Optional.empty();
     }
 
-    private Optional<String> output(InputStream is) {
+    private static Optional<String> output(InputStream is) {
         Scanner scanner = new Scanner(new InputStreamReader(is));
 
         if (scanner.hasNextLine()) {
