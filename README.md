@@ -9,7 +9,7 @@ This component will overcome this challenge and create greater confidence that e
 ##Conceptually
 Conceptually this component works as follows:
 
-* Is there a JIRA isssue number present in the git commit message and does it belongs to the right project?
+* Is there a JIRA issue number present in the git commit message and does it belongs to the right project?
 * Is there an actual JIRA issue which complies with the given JIRA issue number?
 * Is the developer set as 'Assignee' on the JIRA issue?
 * Has the JIRA issue a status that accepts code to be checked in?
@@ -48,7 +48,23 @@ Committed using hook v. 1.0.2
 ```
 
 ##Logical
-add information here
+As stated in the Conceptual description, the git-jira hooks checks if the state of the given issue key is fulfilled.
+In case those rules are too restrictive, there are options for loosen some of the rules.
+
+```
+Option: -A
+Description: Override check of assignee. Must be capital letter and the last part of message
+Example: EXAMPLE-123 Fixed something -A
+
+Option: -O
+Description: Override communication with JIRA
+Example: EXAMPLE-123 Fixed something -O
+
+Option: NONE
+Description: Used for checking-in code into git without having any JIRA issue key. Note: Use with caution due to loss of traceability
+Example: NONE pruned git tree
+```
+
 
 ##Physical
 This component is based on REST calls to JIRA-instance.
