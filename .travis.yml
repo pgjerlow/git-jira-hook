@@ -1,4 +1,5 @@
 language: java
 
-./gradle check
+script:
+./gradlew check
 
