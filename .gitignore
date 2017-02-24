@@ -1,8 +1,10 @@
 #Ignore IDE specific files and folders
 .idea
 *.iml
-
 *.class
+
+# ignore other files
+*~
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
@@ -21,3 +23,4 @@ debug.log
 # ignore directories
 .gradle
 build
+
