@@ -3,6 +3,16 @@ language: java
 before_install:
   chmod +x gradlew
 
+#branches:
+#  only:
+#    - master
+
+cache:
+  directories:
+  - $HOME/.gradle
+
 script:
-  ./gradlew check
+  ./gradlew clean check
+
+
 
