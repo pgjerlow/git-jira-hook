@@ -3,9 +3,9 @@ language: java
 before_install:
   chmod +x gradlew
 
-#branches:
-#  only:
-#    - master
+branches:
+  only:
+    - master
 
 cache:
   directories:
