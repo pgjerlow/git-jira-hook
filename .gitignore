@@ -1,8 +1,13 @@
 #Ignore IDE specific files and folders
 .idea
 *.iml
+*.ipr
+*.iws
 
+commitMsg.txt
+dependency-reduced-pom.xml
 *.class
+# *~
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/

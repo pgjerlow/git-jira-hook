@@ -18,10 +18,11 @@ public class GitHook {
     private final Logger logger = LoggerFactory.getLogger(GitHook.class);
     private static GitHook githook;
     private ResourceBundle messages;
-    private CommitMessageManipulator manipulator;
+    private static CommitMessageManipulator manipulator;
 
     public static void main(String[] args) {
         githook = new GitHook();
+        manipulator = new CommitMessageManipulator();
         githook.init(args);
     }
 
@@ -30,7 +31,7 @@ public class GitHook {
         loadI18nMessages(GitConfig.getLanguageSettings());
         printInitalText();
 
-        if (args != null) {
+        if (args != null && args.length > 0) {
             manipulator.loadCommitMessage(args[0]);
 
             // Load JIRA project list

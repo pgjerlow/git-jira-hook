@@ -37,7 +37,7 @@ public class CommitMessageManipulator {
         try {
             commitFileContents = Files.lines(path, StandardCharsets.UTF_8)
                     .collect(Collectors.joining());
-            logger.debug("The file contents are {}", commitFileContents);
+            logger.debug("The file contents are: \n\t {}", commitFileContents);
         } catch (IOException e) {
             logger.error("Unable to read commit message file. \nGot exception {}", e);
         }
