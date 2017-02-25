@@ -26,7 +26,7 @@ public class GitConfig {
     private static final Logger logger = LoggerFactory.getLogger(GitConfig.class);
 
     private static final String JIRA_USERNAME = "githook.jira.username";
-    private static final String JIRA_PASSWORD = "githookjira.password";
+    private static final String JIRA_PASSWORD = "githook.jira.password";
     private static final String JIRA_ADDRESS = "githook.jira.address";
     private static final String GIT_HOOK_LANGUAGE_SETTINGS = "githook.language";
     private static final String JIRA_PROJECTS = "githook.jira.projects";
