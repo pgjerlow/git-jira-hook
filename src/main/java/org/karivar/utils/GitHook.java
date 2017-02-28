@@ -7,9 +7,11 @@
  */
 package org.karivar.utils;
 
+import org.karivar.utils.domain.IssueKeyNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -35,6 +37,7 @@ public class GitHook {
             manipulator.loadCommitMessage(args[0]);
 
             // Load JIRA project list
+           Optional<String> jiraProjectKeys =  GitConfig.getJiraProjects();
 
             // Load JIRA issue types and their accepted statuses.
 
@@ -43,6 +46,29 @@ public class GitHook {
             //   2: override (e.g force) commits
             boolean isJiraCommunicationOverridden = manipulator.isCommunicationOverridden();
             boolean isCommitOverridden = manipulator.isCommitOverridden();
+
+            if (!isJiraCommunicationOverridden && !isCommitOverridden) {
+                logger.debug("Preparing to communicate with Jira");
+
+                String jiraIssuekey = null;
+
+                if (jiraProjectKeys.isPresent()) {
+                    try {
+                        jiraIssuekey = manipulator.getJiraIssueKeyFromCommitMessage(jiraProjectKeys.get());
+                    } catch (IssueKeyNotFoundException e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    logger.debug("There are no project keys registered in git config");
+                }
+
+                if (jiraIssuekey != null) {
+                    logger.debug("There is a jira issue key. Start contacting Jira to fetch the issue itself");
+                }
+
+            } else {
+                logger.debug("Communication with Jira is overridden or commit is overridden");
+            }
 
             // Contact JIRA, fetch JIRA issue and check state and return populated issue
 
