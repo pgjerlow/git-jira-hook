@@ -85,7 +85,7 @@ public class GitConfig {
      */
     public static Optional<String> getLanguageSettings() {
         try {
-            return getValueFromGitConfig(GIT_HOOK_LANGUAGE_SETTINGS, true);
+            return getValueFromGitConfig(GIT_HOOK_LANGUAGE_SETTINGS, false);
         } catch (InterruptedException e) {
             logger.error("InterruptedException", e);
         } catch (IOException e) {
@@ -98,17 +98,16 @@ public class GitConfig {
      * Gets a list of potential Jira projects from the local git configuration
      * @return the Jira projects
      */
-    public static List<Optional<String>> getJiraProjects() {
+    public static Optional<String> getJiraProjects() {
 
-        List<Optional<String>> projects = new ArrayList<>();
         try {
-            projects.add(getValueFromGitConfig(JIRA_PROJECTS, true));
+            return getValueFromGitConfig(JIRA_PROJECTS, false);
         } catch (InterruptedException e) {
             logger.error("InterruptedException", e);
         } catch (IOException e) {
             logger.error("IOException", e);
         }
-        return projects;
+        return Optional.empty();
     }
 
 
@@ -123,7 +122,7 @@ public class GitConfig {
         command += key;
         Runtime runtime = Runtime.getRuntime();
         Process process = runtime.exec(command);
-        int errorCode =process.waitFor();
+        int errorCode = process.waitFor();
 
         if (errorCode == 0) {
             return output(process.getInputStream());
