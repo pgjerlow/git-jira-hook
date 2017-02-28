@@ -21,6 +21,30 @@
         <app.main.class>org.karivar.utils.GitHook</app.main.class>
     </properties>
 
+    <repositories>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+                <checksumPolicy>warn</checksumPolicy>
+            </snapshots>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>warn</checksumPolicy>
+            </releases>
+            <id>atlassian-public</id>
+            <url>https://maven.atlassian.com/repository/public</url>
+        </repository>
+    </repositories>
+
     <scm>
         <connection>scm:git:git@github.com:pgjerlow/git-jira-hook.git</connection>
         <url>scm:git:git@github.com:pgjerlow/git-jira-hook.git</url>
@@ -105,6 +129,11 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>21.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.atlassian.jira</groupId>
+            <artifactId>jira-rest-java-client-core</artifactId>
+            <version>4.0.0</version>
         </dependency>
     </dependencies>
 </project>
