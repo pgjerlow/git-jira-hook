@@ -110,9 +110,6 @@ public class CommitMessageManipulator {
                             }
                         }
                     }
-                }  else{
-                    logger.error("The jira issue pattern is not found");
-                    throw new IssueKeyNotFoundException("The jira issue pattern is not found");
                 }
             } else {
                 logger.error("The jira issue pattern is not found");
@@ -123,6 +120,9 @@ public class CommitMessageManipulator {
                 throw new IssueKeyNotFoundException("The commit line is empty");
         }
 
+        if (jiraIssueKey == null) {
+            throw new IssueKeyNotFoundException("The Jira issue key is not set");
+        }
         return jiraIssueKey;
     }
 }
