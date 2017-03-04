@@ -132,7 +132,7 @@ public class GitConfig {
     }
 
     private static Optional<String> output(InputStream is) {
-        Scanner scanner = new Scanner(new InputStreamReader(is));
+        Scanner scanner = new Scanner(new InputStreamReader(is)).useDelimiter("\\A");
 
         if (scanner.hasNextLine()) {
             return Optional.of(scanner.nextLine());
