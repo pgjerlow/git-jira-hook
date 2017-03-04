@@ -21,6 +21,7 @@ public class GitHook {
     private static GitHook githook;
     private ResourceBundle messages;
     private static CommitMessageManipulator manipulator;
+    private JiraConnector jiraConnector;
 
     public static void main(String[] args) {
         githook = new GitHook();
@@ -50,21 +51,25 @@ public class GitHook {
             if (!isJiraCommunicationOverridden && !isCommitOverridden) {
                 logger.debug("Preparing to communicate with Jira");
 
-                String jiraIssuekey = null;
+//                String jiraIssuekey = null;
 
-                if (jiraProjectKeys.isPresent()) {
-                    try {
-                        jiraIssuekey = manipulator.getJiraIssueKeyFromCommitMessage(jiraProjectKeys.get());
-                    } catch (IssueKeyNotFoundException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    logger.debug("There are no project keys registered in git config");
-                }
-
-                if (jiraIssuekey != null) {
-                    logger.debug("There is a jira issue key. Start contacting Jira to fetch the issue itself");
-                }
+//                if (jiraProjectKeys.isPresent()) {
+//                    try {
+//                        jiraIssuekey = manipulator.getJiraIssueKeyFromCommitMessage(jiraProjectKeys.get());
+//                        logger.debug("found key");
+//                    } catch (IssueKeyNotFoundException e) {
+//                        e.printStackTrace();
+//                    }
+//                } else {
+//                    logger.debug("There are no project keys registered in git config");
+//                }
+//
+//                if (jiraIssuekey != null) {
+//                    logger.debug("There is a jira issue key. Start contacting Jira to fetch the issue itself");
+//                }
+                JiraConnector jiraConnector = new JiraConnector();
+                jiraConnector.connectToJira(GitConfig.getJiraUsername(),
+                        GitConfig.getJiraEncodedPassword(), GitConfig.getJiraAddress());
 
             } else {
                 logger.debug("Communication with Jira is overridden or commit is overridden");
