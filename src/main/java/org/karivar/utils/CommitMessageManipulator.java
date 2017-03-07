@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 
 /**
@@ -88,8 +89,8 @@ public class CommitMessageManipulator {
         return isAssigneeOverridden;
     }
 
-    public String getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) throws IssueKeyNotFoundException {
-        String jiraIssueKey = null;
+    public Optional<String> getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) {
+        Optional<String> jiraIssueKey = Optional.empty();
         String firstLineOfCommitMessage = commitFileContents.get(0);
         logger.debug("Starting getJiraIssueKeyFromCommitMessage({}, {})", firstLineOfCommitMessage, jiraIssuePattern);
 
@@ -105,7 +106,7 @@ public class CommitMessageManipulator {
                         for (String word : commitLineWords) {
                             if (word.toUpperCase().startsWith(pattern.toUpperCase())) {
                                 logger.debug("Found issue key {}", word);
-                                jiraIssueKey = word.toUpperCase();
+                                jiraIssueKey = Optional.of(word.toUpperCase());
                                 break;
                             }
                         }
@@ -113,16 +114,11 @@ public class CommitMessageManipulator {
                 }
             } else {
                 logger.error("The jira issue pattern is not found");
-                throw new IssueKeyNotFoundException("The jira issue pattern is not found");
             }
         }  else {
                 logger.error("The commit line is empty");
-                throw new IssueKeyNotFoundException("The commit line is empty");
         }
 
-        if (jiraIssueKey == null) {
-            throw new IssueKeyNotFoundException("The Jira issue key is not set");
-        }
         return jiraIssueKey;
     }
 }

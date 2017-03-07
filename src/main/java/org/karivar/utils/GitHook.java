@@ -8,13 +8,11 @@
 package org.karivar.utils;
 
 import org.karivar.utils.domain.IssueKeyNotFoundException;
+import org.karivar.utils.domain.JiraIssue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 
 public class GitHook {
     private final Logger logger = LoggerFactory.getLogger(GitHook.class);
@@ -22,6 +20,7 @@ public class GitHook {
     private ResourceBundle messages;
     private static CommitMessageManipulator manipulator;
     private JiraConnector jiraConnector;
+    private JiraIssue populatedIssue;
 
     public static void main(String[] args) {
         githook = new GitHook();
@@ -51,25 +50,18 @@ public class GitHook {
             if (!isJiraCommunicationOverridden && !isCommitOverridden) {
                 logger.debug("Preparing to communicate with Jira");
 
-//                String jiraIssuekey = null;
-
-//                if (jiraProjectKeys.isPresent()) {
-//                    try {
-//                        jiraIssuekey = manipulator.getJiraIssueKeyFromCommitMessage(jiraProjectKeys.get());
-//                        logger.debug("found key");
-//                    } catch (IssueKeyNotFoundException e) {
-//                        e.printStackTrace();
-//                    }
-//                } else {
-//                    logger.debug("There are no project keys registered in git config");
-//                }
-//
-//                if (jiraIssuekey != null) {
-//                    logger.debug("There is a jira issue key. Start contacting Jira to fetch the issue itself");
-//                }
                 JiraConnector jiraConnector = new JiraConnector();
                 jiraConnector.connectToJira(GitConfig.getJiraUsername(),
                         GitConfig.getJiraEncodedPassword(), GitConfig.getJiraAddress());
+
+                try {
+                    Optional<String> issueKey = manipulator.getJiraIssueKeyFromCommitMessage(
+                            getJiraIssueKey(jiraProjectKeys));
+                    populatedIssue = jiraConnector.getJiraPopulatedIssue(issueKey);
+                } catch (IssueKeyNotFoundException e) {
+                    logger.error(e.getLocalizedMessage());
+                }
+
 
             } else {
                 logger.debug("Communication with Jira is overridden or commit is overridden");
@@ -96,5 +88,38 @@ public class GitHook {
     private void printInitalText() {
         logger.info(messages.getString("startup.information") +  " 0.0.1");
     }
+
+    private String getJiraIssueKey(Optional<String> jiraProjectPattern) {
+        String issueKey = null;
+
+        if (jiraProjectPattern.isPresent()) {
+
+            issueKey = null;
+
+//            try {
+                Optional<String> possibleIssueKey = manipulator.getJiraIssueKeyFromCommitMessage(
+                        jiraProjectPattern.get());
+                if (possibleIssueKey.isPresent()) {
+                    issueKey = possibleIssueKey.get();
+                }
+//            } catch (NoSuchElementException e) {
+//
+//            }
+
+//            try {
+//                issueKey = manipulator.getJiraIssueKeyFromCommitMessage(jiraProjectPattern.get();
+//                logger.debug("found key {}", issueKey);
+//            } catch (IssueKeyNotFoundException e) {
+//                e.printStackTrace();
+//            } catch (java.util.NoSuchElementException e) {
+//                e.printStackTrace();
+//            }
+        } else {
+            logger.debug("There are no project keys registered in git config");
+        }
+
+        return issueKey;
+    }
+
 
 }
