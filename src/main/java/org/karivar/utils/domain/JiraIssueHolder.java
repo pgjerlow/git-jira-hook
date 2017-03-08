@@ -1,3 +1,10 @@
+/**
+ * Copyright (C) 2017 Per Ivar Gjerløw
+ * All rights reserved.
+ *
+ * This software may be modified and distributed under the terms
+ * of the MIT license.  See the LICENSE file for details.
+ */
 package org.karivar.utils.domain;
 
 import com.atlassian.jira.rest.client.api.domain.Issue;
@@ -12,10 +19,10 @@ public class JiraIssueHolder {
     }
 
     public BasicJiraIssue getJiraIssue() {
-        return this.jiraIssue;
+        return jiraIssue;
     }
 
     public Issue getIssue() {
-        return this.issue;
+        return issue;
     }
 }
