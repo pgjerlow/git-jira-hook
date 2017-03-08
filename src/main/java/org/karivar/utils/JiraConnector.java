@@ -1,28 +1,23 @@
 package org.karivar.utils;
 
-
 import com.atlassian.jira.rest.client.api.IssueRestClient;
 import com.atlassian.jira.rest.client.api.JiraRestClient;
 import com.atlassian.jira.rest.client.api.RestClientException;
 import com.atlassian.jira.rest.client.api.domain.Issue;
 import com.atlassian.jira.rest.client.api.domain.IssueField;
+import com.atlassian.jira.rest.client.api.domain.IssueLink;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 import com.atlassian.util.concurrent.Promise;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.karivar.utils.domain.IssueKeyNotFoundException;
-import org.karivar.utils.domain.JiraIssue;
-import org.karivar.utils.domain.ParentJiraIssue;
-import org.karivar.utils.domain.User;
+import org.karivar.utils.domain.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Base64;
-import java.util.LinkedHashMap;
-import java.util.Optional;
+import java.util.*;
 
 public class JiraConnector {
 
@@ -32,9 +27,9 @@ public class JiraConnector {
 
     /**
      * Connects to the JIRA instance.
-     * @param jiraUsername
-     * @param jiraEncodedPassword
-     * @param jiraAddress
+     * @param jiraUsername the JIRA username
+     * @param jiraEncodedPassword the base46 encoded password
+     * @param jiraAddress the JIRA address
      */
     public void connectToJira(Optional<String> jiraUsername,
                                  Optional<String> jiraEncodedPassword,
@@ -56,32 +51,13 @@ public class JiraConnector {
     }
 
     /**
-     *
-     * @param jiraIssueKey
-     * @return
-     * @throws IssueKeyNotFoundException
+     * Fetches the populated JIRA issue for the given issue key.
+     * @param jiraIssueKey the given jira issue id
+     * @return the fully populated JIRA issue
+     * @throws IssueKeyNotFoundException in case of problems (connectivity, malformed messages, invalid argument, etc.)
      */
     public JiraIssue getJiraPopulatedIssue(Optional<String> jiraIssueKey) throws IssueKeyNotFoundException {
-
-        JiraIssue populatedJiraIssue = null;
-
-        if (issueRestClient != null && jiraIssueKey.isPresent()) {
-            try {
-                Promise<Issue> issuePromise = issueRestClient.getIssue(jiraIssueKey.get());
-                Issue issue = issuePromise.claim();
-
-                populatedJiraIssue = mapJiraIssue(issue);
-
-            } catch (RestClientException e) {
-                if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 403) {
-                    // Forbidden access
-                    throw new IssueKeyNotFoundException("Unable to authorize. Check your JIRA username and password");
-                } else e.printStackTrace();
-            }
-        }
-
-
-        return populatedJiraIssue;
+        return mapJiraIssue(fetchBasicJiraIssue(jiraIssueKey));
     }
 
     private String getDecodedPassword(Optional<String> jiraEncodedPassword) {
@@ -99,22 +75,26 @@ public class JiraConnector {
 
         URI jiraAddressUri = null;
         try {
-            jiraAddressUri = new URI(jiraAddress.get());
+            if (jiraAddress.isPresent()) {
+                jiraAddressUri = new URI(jiraAddress.get());
+            }
         } catch (URISyntaxException e) {
             logger.error("The JIRA address is misspelled.");
         }
         return jiraAddressUri;
     }
 
-    private JiraIssue mapJiraIssue(Issue issue) {
-        JiraIssue jiraIssue = null;
+    private JiraIssue mapJiraIssue(JiraIssueHolder issueHolder) {
+
+        Issue issue = issueHolder.getIssue();
+        JiraIssue jiraIssue = new JiraIssue(issueHolder.getJiraIssue().getKey(),
+                issueHolder.getJiraIssue().getSummary());
 
         if (issue != null) {
-            jiraIssue = new JiraIssue(issue.getKey(), issue.getSummary());
 
             if (issue.getAssignee() != null) {
                 User assignee = new User(issue.getAssignee().getName(), issue.getAssignee().getDisplayName());
-                jiraIssue.setAssignee(assignee);
+                jiraIssue.setAssignee(Optional.of(assignee));
             }
 
             if (issue.getStatus() != null) {
@@ -126,30 +106,80 @@ public class JiraConnector {
             }
 
             if (issue.getResolution() != null) {
-                jiraIssue.setResoluition(issue.getResolution().getDescription());
+                jiraIssue.setResolution(Optional.of(issue.getResolution().getDescription()));
             }
 
-            if (issue.getField("parent") != null) {
-                IssueField parentIssueField = issue.getField("parent");
-                ParentJiraIssue parentJiraIssue = null;
+            // parent issue
+            IssueField parentIssueField = issue.getField("parent");
+            if (parentIssueField != null) {
+                BasicJiraIssue basicJiraIssue = getParentIssueInfo(parentIssueField);
+                jiraIssue.setParentIssue(Optional.of(basicJiraIssue));
+            }
 
-                JSONObject jsonObject = (JSONObject) parentIssueField.getValue();
-                try {
-                    String parentKey = jsonObject.getString("key");
-                    JSONObject parentFields = (JSONObject) jsonObject.get("fields");
-                    String parentSummary = parentFields.getString("summary");
-                    parentJiraIssue = new ParentJiraIssue(parentKey, parentSummary);
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-                jiraIssue.setParentIssue(Optional.of(parentJiraIssue));
+            // related issues
+            if (issue.getIssueLinks() != null) {
+                List<BasicJiraIssue> relatedJiraIssues = getRelatedIssues(issue);
+                jiraIssue.setRelatedIssues(relatedJiraIssues);
             }
 
         }
 
         return  jiraIssue;
+    }
+
+    private List<BasicJiraIssue> getRelatedIssues(Issue issue) {
+        Iterator<IssueLink> issueLinkIterator;
+        issueLinkIterator = issue.getIssueLinks().iterator();
+        List<BasicJiraIssue> relatedJiraIssues = new ArrayList<>();
+
+        JiraIssueHolder relatedIssueHolder;
+        while (issueLinkIterator.hasNext()) {
+            IssueLink issueLink = issueLinkIterator.next();
+
+            if (issueLink.getIssueLinkType().getName().equalsIgnoreCase("Relates")) {
+                Optional<String> relatedIssueKey = Optional.of(issueLink.getTargetIssueKey());
+                relatedIssueHolder = fetchBasicJiraIssue(relatedIssueKey);
+                relatedJiraIssues.add(relatedIssueHolder.getJiraIssue());
+            }
+        }
+        return relatedJiraIssues;
+    }
+
+    private JiraIssueHolder fetchBasicJiraIssue(Optional<String> jiraIssueKey) throws IssueKeyNotFoundException {
+        JiraIssueHolder holder = null;
+
+        if (issueRestClient != null && jiraIssueKey.isPresent()) {
+            try {
+                Promise<Issue> issuePromise = issueRestClient.getIssue(jiraIssueKey.get());
+                Issue issue = issuePromise.claim();
+
+                BasicJiraIssue basicJiraIssue = new BasicJiraIssue(issue.getKey(), issue.getSummary());
+                holder = new JiraIssueHolder(basicJiraIssue, issue);
+
+            } catch (RestClientException e) {
+                if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 403) {
+                    // Forbidden access
+                    throw new IssueKeyNotFoundException("Unable to authorize access. " +
+                            "Check your JIRA username and password");
+                } else e.printStackTrace();
+            }
+        }
+        return holder;
+    }
+
+    private BasicJiraIssue getParentIssueInfo(IssueField parentIssueField) {
+        BasicJiraIssue basicJiraIssue = null;
+        JSONObject jsonObject = (JSONObject) parentIssueField.getValue();
+        try {
+            String parentKey = jsonObject.getString("key");
+            JSONObject parentFields = (JSONObject) jsonObject.get("fields");
+            String parentSummary = parentFields.getString("summary");
+            basicJiraIssue = new BasicJiraIssue(parentKey, parentSummary);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return basicJiraIssue;
     }
 
 }

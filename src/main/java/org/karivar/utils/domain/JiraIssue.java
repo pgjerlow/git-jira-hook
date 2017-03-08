@@ -4,14 +4,14 @@ package org.karivar.utils.domain;
 import java.util.List;
 import java.util.Optional;
 
-public class JiraIssue extends ParentJiraIssue {
+public class JiraIssue extends BasicJiraIssue {
 
     private String status;
-    private List<Optional<RelatedJiraIssue>> relatedIssues;
-    private Optional<ParentJiraIssue> parentIssue;
+    private List<BasicJiraIssue> relatedIssues;
+    private Optional<BasicJiraIssue> parentIssue;
     private boolean subtask;
-    private User assignee;
-    private String resoluition;
+    private Optional<User> assignee;
+    private Optional<String> resolution;
 
     public JiraIssue(String key, String summary) {
         super(key, summary);
@@ -25,19 +25,19 @@ public class JiraIssue extends ParentJiraIssue {
         this.status = status;
     }
 
-    public List<Optional<RelatedJiraIssue>> getRelatedIssues() {
+    public List<BasicJiraIssue> getRelatedIssues() {
         return relatedIssues;
     }
 
-    public void setRelatedIssues(List<Optional<RelatedJiraIssue>> relatedIssues) {
+    public void setRelatedIssues(List<BasicJiraIssue> relatedIssues) {
         this.relatedIssues = relatedIssues;
     }
 
-    public Optional<ParentJiraIssue> getParentIssue() {
+    public Optional<BasicJiraIssue> getParentIssue() {
         return parentIssue;
     }
 
-    public void setParentIssue(Optional<ParentJiraIssue> parentIssue) {
+    public void setParentIssue(Optional<BasicJiraIssue> parentIssue) {
         this.parentIssue = parentIssue;
     }
 
@@ -49,19 +49,19 @@ public class JiraIssue extends ParentJiraIssue {
         this.subtask = subtask;
     }
 
-    public User getAssignee() {
+    public Optional<User> getAssignee() {
         return assignee;
     }
 
-    public void setAssignee(User assignee) {
+    public void setAssignee(Optional<User> assignee) {
         this.assignee = assignee;
     }
 
-    public String getResoluition() {
-        return resoluition;
+    public Optional<String> getResolution() {
+        return resolution;
     }
 
-    public void setResoluition(String resoluition) {
-        this.resoluition = resoluition;
+    public void setResolution(Optional<String> resolution) {
+        this.resolution = resolution;
     }
 }

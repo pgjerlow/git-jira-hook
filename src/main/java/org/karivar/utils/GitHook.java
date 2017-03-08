@@ -28,7 +28,7 @@ public class GitHook {
         githook.init(args);
     }
 
-    public void init(String[] args) {
+    private void init(String[] args) {
 
         loadI18nMessages(GitConfig.getLanguageSettings());
         printInitalText();
@@ -80,9 +80,8 @@ public class GitHook {
     }
 
     private void loadI18nMessages(Optional<String> languageSettings) {
-        if (languageSettings.isPresent()) {
-            messages = ResourceBundle.getBundle("messages", Locale.forLanguageTag(languageSettings.get()));
-        } else messages = ResourceBundle.getBundle("messages");
+        messages = languageSettings.map(s -> ResourceBundle.getBundle("messages",
+                Locale.forLanguageTag(s))).orElseGet(() -> ResourceBundle.getBundle("messages"));
     }
 
     private void printInitalText() {
@@ -94,26 +93,13 @@ public class GitHook {
 
         if (jiraProjectPattern.isPresent()) {
 
-            issueKey = null;
+            Optional<String> possibleIssueKey = manipulator.getJiraIssueKeyFromCommitMessage(
+                    jiraProjectPattern.get());
 
-//            try {
-                Optional<String> possibleIssueKey = manipulator.getJiraIssueKeyFromCommitMessage(
-                        jiraProjectPattern.get());
-                if (possibleIssueKey.isPresent()) {
-                    issueKey = possibleIssueKey.get();
-                }
-//            } catch (NoSuchElementException e) {
-//
-//            }
+            if (possibleIssueKey.isPresent()) {
+                issueKey = possibleIssueKey.get();
+            }
 
-//            try {
-//                issueKey = manipulator.getJiraIssueKeyFromCommitMessage(jiraProjectPattern.get();
-//                logger.debug("found key {}", issueKey);
-//            } catch (IssueKeyNotFoundException e) {
-//                e.printStackTrace();
-//            } catch (java.util.NoSuchElementException e) {
-//                e.printStackTrace();
-//            }
         } else {
             logger.debug("There are no project keys registered in git config");
         }

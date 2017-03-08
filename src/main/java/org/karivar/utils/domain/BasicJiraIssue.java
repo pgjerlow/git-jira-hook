@@ -1,11 +1,11 @@
 package org.karivar.utils.domain;
 
 
-public class ParentJiraIssue {
+public class BasicJiraIssue {
     private String key;
     private String summary;
 
-    public ParentJiraIssue(String key, String summary) {
+    public BasicJiraIssue(String key, String summary) {
         this.key = key;
         this.summary = summary;
     }
