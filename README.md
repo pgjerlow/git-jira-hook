@@ -26,7 +26,7 @@ sub-task of: <PARENT_JIRAISSUE_KEY> <PARENT__JIRAISSUE_SUMMARY> (optional)
 related to: <RELATED_JIRAISSUE_KEY> <RELATED_JIRAISSUE_SUMMARY> (optional)
 <empty line> (optional)
 <additional information> (optional)
-<empty line>
+<empty line> (optional)
 <hook version information>
 ```
 
