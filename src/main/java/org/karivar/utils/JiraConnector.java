@@ -15,6 +15,7 @@ import com.atlassian.jira.rest.client.api.domain.IssueField;
 import com.atlassian.jira.rest.client.api.domain.IssueLink;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 import com.atlassian.util.concurrent.Promise;
+import com.google.common.collect.Lists;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.karivar.utils.domain.*;
@@ -30,6 +31,8 @@ public class JiraConnector {
 
     private final Logger logger = LoggerFactory.getLogger(JiraConnector.class);
     private IssueRestClient issueRestClient;
+
+    private static String PARENT_JSON_NAME = "parent";
 
 
     /**
@@ -60,11 +63,12 @@ public class JiraConnector {
     /**
      * Fetches the populated JIRA issue for the given issue key.
      * @param jiraIssueKey the given jira issue id
+     * @param issueLinks
      * @return the fully populated JIRA issue
      * @throws IssueKeyNotFoundException in case of problems (connectivity, malformed messages, invalid argument, etc.)
      */
-    public JiraIssue getJiraPopulatedIssue(Optional<String> jiraIssueKey) throws IssueKeyNotFoundException {
-        return mapJiraIssue(fetchBasicJiraIssue(jiraIssueKey));
+    public JiraIssue getJiraPopulatedIssue(Optional<String> jiraIssueKey, List<String> issueLinks) throws IssueKeyNotFoundException {
+        return mapJiraIssue(fetchBasicJiraIssue(jiraIssueKey), issueLinks);
     }
 
     private String getDecodedPassword(Optional<String> jiraEncodedPassword) {
@@ -91,7 +95,7 @@ public class JiraConnector {
         return jiraAddressUri;
     }
 
-    private JiraIssue mapJiraIssue(JiraIssueHolder issueHolder) {
+    private JiraIssue mapJiraIssue(JiraIssueHolder issueHolder, List<String> issueLinks) {
 
         Issue issue = issueHolder.getIssue();
         JiraIssue jiraIssue = new JiraIssue(issueHolder.getJiraIssue().getKey(),
@@ -117,7 +121,7 @@ public class JiraConnector {
             }
 
             // parent issue
-            IssueField parentIssueField = issue.getField("parent");
+            IssueField parentIssueField = issue.getField(PARENT_JSON_NAME);
             if (parentIssueField != null) {
                 BasicJiraIssue basicJiraIssue = getParentIssueInfo(parentIssueField);
                 jiraIssue.setParentIssue(Optional.of(basicJiraIssue));
@@ -125,7 +129,7 @@ public class JiraConnector {
 
             // related issues
             if (issue.getIssueLinks() != null) {
-                List<BasicJiraIssue> relatedJiraIssues = getRelatedIssues(issue);
+                List<BasicJiraIssue> relatedJiraIssues = getRelatedIssues(issue, issueLinks);
                 jiraIssue.setRelatedIssues(relatedJiraIssues);
             }
 
@@ -134,20 +138,26 @@ public class JiraConnector {
         return  jiraIssue;
     }
 
-    private List<BasicJiraIssue> getRelatedIssues(Issue issue) {
+    private List<BasicJiraIssue> getRelatedIssues(Issue issue, List<String> issuesLinks) {
         Iterator<IssueLink> issueLinkIterator;
         issueLinkIterator = issue.getIssueLinks().iterator();
-        List<BasicJiraIssue> relatedJiraIssues = new ArrayList<>();
+        List<BasicJiraIssue> relatedJiraIssues = Lists.newArrayList();
 
         JiraIssueHolder relatedIssueHolder;
+        Iterator<String> issueLinksIterator = issuesLinks.iterator();
         while (issueLinkIterator.hasNext()) {
             IssueLink issueLink = issueLinkIterator.next();
 
-            if (issueLink.getIssueLinkType().getName().equalsIgnoreCase("Relates")) {
-                Optional<String> relatedIssueKey = Optional.of(issueLink.getTargetIssueKey());
-                relatedIssueHolder = fetchBasicJiraIssue(relatedIssueKey);
-                relatedJiraIssues.add(relatedIssueHolder.getJiraIssue());
+            while (issueLinksIterator.hasNext()) {
+                String issueLinkType = issueLinksIterator.next();
+                if (issueLink.getIssueLinkType().getName().equalsIgnoreCase(issueLinkType)) {
+                    Optional<String> relatedIssueKey = Optional.of(issueLink.getTargetIssueKey());
+                    relatedIssueHolder = fetchBasicJiraIssue(relatedIssueKey);
+                    relatedJiraIssues.add(relatedIssueHolder.getJiraIssue());
+                }
             }
+
+
         }
         return relatedJiraIssues;
     }
