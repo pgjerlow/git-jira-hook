@@ -9,6 +9,7 @@ package org.karivar.utils.domain;
 
 import java.util.List;
 import java.util.Optional;
+import com.google.common.base.Objects;
 
 public class JiraIssue extends BasicJiraIssue {
 
@@ -69,5 +70,36 @@ public class JiraIssue extends BasicJiraIssue {
 
     public void setResolution(Optional<String> resolution) {
         this.resolution = resolution;
+    }
+
+    @Override
+    public String toString() {
+        return super.getToStringHelper().
+                add("Status", status).
+                add("Assignee", assignee).
+                add("Resolution", resolution).
+                add("Subtask", subtask).
+                add("Parent issue", parentIssue).
+                add("Related issues", relatedIssues).
+                toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof JiraIssue) {
+            JiraIssue that = (JiraIssue) obj;
+            return Objects.equal(this.status, that.status)
+                    && Objects.equal(this.assignee, that.assignee)
+                    && Objects.equal(this.resolution, that.resolution)
+                    && Objects.equal(this.subtask, that.subtask)
+                    && Objects.equal(this.parentIssue, that.parentIssue)
+                    && Objects.equal(this.relatedIssues, that.relatedIssues);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode( status, assignee, resolution, subtask, parentIssue, relatedIssues);
     }
 }

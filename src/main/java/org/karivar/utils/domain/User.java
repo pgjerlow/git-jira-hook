@@ -7,6 +7,9 @@
  */
 package org.karivar.utils.domain;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Objects;
+
 public class User {
     private String name;
     private String displayName;
@@ -22,5 +25,28 @@ public class User {
 
     public String getDisplayName() {
         return displayName;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(this).
+                add("Username", name).
+                add("Display name", displayName)
+                .toString();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof User) {
+            User that = (User) obj;
+            return Objects.equal(this.name, that.name)
+                    && Objects.equal(this.displayName, that.displayName);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode( name, displayName);
     }
 }
