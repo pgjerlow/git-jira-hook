@@ -8,9 +8,8 @@
 package org.karivar.utils;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.Maps;
 import org.karivar.utils.domain.IssueKeyNotFoundException;
 import org.karivar.utils.domain.JiraIssue;
 import org.slf4j.Logger;
@@ -27,7 +26,7 @@ public class GitHook {
     private static CommitMessageManipulator manipulator;
     private JiraConnector jiraConnector;
     private JiraIssue populatedIssue;
-    private Multimap<String, List<String>> issueTypesAndStatuses;
+    private Map<String, List<String>> issueTypesAndStatuses;
     private List<String> issueLinks;
     private Optional<String> jiraProjectKeys;
 
@@ -52,12 +51,6 @@ public class GitHook {
         } else {
             logger.error(messages.getString("error.githook.nocommitfile"));
         }
-    }
-
-    private void updateCommitMessage() {
-    }
-
-    private void checkStateAndManipulateCommitMessage() {
     }
 
     private void fetchPopulatedJiraIssue() {
@@ -87,6 +80,81 @@ public class GitHook {
         }
     }
 
+    private void checkStateAndManipulateCommitMessage() {
+        //boolean statusOK;
+        // check status against allowed statues
+        boolean statusOK = checkAllowedStatus();
+
+        boolean assigneeOK =false;
+        if (!manipulator.isAssigneeOverridden()) {
+            // check assignee
+            assigneeOK = checkAssignee();
+        }
+
+        if (statusOK && assigneeOK) {
+            logger.debug("Status is OK");
+
+            String manipulatedMessage = manipulator.getStrippedCommitMessage();
+            logger.debug("The manipulated message is\n{}", manipulatedMessage);
+
+        } else {
+            logger.debug("Status is not OK. ");
+            if (!statusOK) {
+                logger.info(messages.getString("commitnotallowedstatus")
+                        + populatedIssue.getStatus());
+            }
+
+            if (!assigneeOK) {
+                logger.info(messages.getString("commitnotallowedassignee")
+                        + populatedIssue.getAssignee().get().getDisplayName());
+            }
+        }
+
+    }
+
+    private boolean checkAssignee() {
+        if (populatedIssue != null && populatedIssue.getAssignee().isPresent()) {
+            String assignedUsername = populatedIssue.getAssignee().
+                    get().getName();
+
+            if (assignedUsername.equals(GitConfig.getJiraUsername().get())) {
+                return true;
+            }
+        } else {
+            return true;
+        }
+
+        return false;
+    }
+
+    private boolean checkAllowedStatus() {
+
+        if (manipulator.isCommunicationOverridden()) {
+            return true;
+        }
+
+        if (populatedIssue != null) {
+            List<String> issueTypeStatuses = issueTypesAndStatuses.get(populatedIssue.getIssueTypeName());
+
+            if (issueTypeStatuses != null && !issueTypeStatuses.isEmpty()) {
+                Iterator<String> statusIterator = issueTypeStatuses.iterator();
+
+                while (statusIterator.hasNext()) {
+                    String status = statusIterator.next();
+
+                    if (status.equals(populatedIssue.getStatus())) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void updateCommitMessage() {
+    }
+
     private void loadApplicationProperties() {
         // Load JIRA project list
         jiraProjectKeys =  GitConfig.getJiraProjects();
@@ -104,8 +172,8 @@ public class GitHook {
                 Locale.forLanguageTag(s))).orElseGet(() -> ResourceBundle.getBundle("messages"));
     }
 
-    private Multimap<String, List<String>> loadIssueTypesAndStatuses() {
-        Multimap<String, List<String>> issueTypesAndStatuses = ArrayListMultimap.create();
+    private Map<String, List<String>> loadIssueTypesAndStatuses() {
+        Map<String, List<String>> issueTypesAndStatuses = Maps.newHashMap();
 
         Properties properties = loadPropertiesFile("issuetypes.properties");
 
@@ -179,6 +247,5 @@ public class GitHook {
 
         return issueKey;
     }
-
 
 }

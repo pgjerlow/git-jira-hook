@@ -67,7 +67,8 @@ public class JiraConnector {
      * @return the fully populated JIRA issue
      * @throws IssueKeyNotFoundException in case of problems (connectivity, malformed messages, invalid argument, etc.)
      */
-    public JiraIssue getJiraPopulatedIssue(Optional<String> jiraIssueKey, List<String> issueLinks) throws IssueKeyNotFoundException {
+    public JiraIssue getJiraPopulatedIssue(Optional<String> jiraIssueKey, List<String> issueLinks)
+            throws IssueKeyNotFoundException {
         return mapJiraIssue(fetchBasicJiraIssue(jiraIssueKey), issueLinks);
     }
 
@@ -114,6 +115,7 @@ public class JiraConnector {
 
             if (issue.getIssueType() != null) {
                 jiraIssue.setSubtask(issue.getIssueType().isSubtask());
+                jiraIssue.setIssueTypeName(issue.getIssueType().getName());
             }
 
             if (issue.getResolution() != null) {
@@ -132,7 +134,6 @@ public class JiraConnector {
                 List<BasicJiraIssue> relatedJiraIssues = getRelatedIssues(issue, issueLinks);
                 jiraIssue.setRelatedIssues(relatedJiraIssues);
             }
-
         }
 
         return  jiraIssue;

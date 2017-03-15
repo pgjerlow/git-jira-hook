@@ -17,6 +17,7 @@ public class JiraIssue extends BasicJiraIssue {
     private List<BasicJiraIssue> relatedIssues;
     private Optional<BasicJiraIssue> parentIssue;
     private boolean subtask;
+    private String issueTypeName;
     private Optional<User> assignee;
     private Optional<String> resolution;
 
@@ -56,6 +57,14 @@ public class JiraIssue extends BasicJiraIssue {
         this.subtask = subtask;
     }
 
+    public String getIssueTypeName() {
+        return issueTypeName;
+    }
+
+    public void setIssueTypeName(String issueTypeName) {
+        this.issueTypeName = issueTypeName;
+    }
+
     public Optional<User> getAssignee() {
         return assignee;
     }
@@ -79,6 +88,7 @@ public class JiraIssue extends BasicJiraIssue {
                 add("Assignee", assignee).
                 add("Resolution", resolution).
                 add("Subtask", subtask).
+                add("Issuetype name", issueTypeName).
                 add("Parent issue", parentIssue).
                 add("Related issues", relatedIssues).
                 toString();
@@ -92,6 +102,7 @@ public class JiraIssue extends BasicJiraIssue {
                     && Objects.equal(this.assignee, that.assignee)
                     && Objects.equal(this.resolution, that.resolution)
                     && Objects.equal(this.subtask, that.subtask)
+                    && Objects.equal(this.issueTypeName, that.issueTypeName)
                     && Objects.equal(this.parentIssue, that.parentIssue)
                     && Objects.equal(this.relatedIssues, that.relatedIssues);
         }

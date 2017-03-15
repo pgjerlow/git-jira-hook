@@ -9,7 +9,6 @@ package org.karivar.utils;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import org.karivar.utils.domain.IssueKeyNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +17,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +35,7 @@ public class CommitMessageManipulator {
     private static final String JIRA_COMMIT_OVERRIDDEN = "NONE";
 
     private List<String> commitFileContents = null;
+    private boolean jiraIssueKeyFound;
 
     public void loadCommitMessage(String filename) {
 
@@ -68,7 +70,7 @@ public class CommitMessageManipulator {
         if (wordList.length > 0) {
             String first = wordList[0];
 
-            if (first.equals(JIRA_COMMIT_OVERRIDDEN)) {
+            if (first.equalsIgnoreCase(JIRA_COMMIT_OVERRIDDEN)) {
                 isCommitOverridden = true;
             }
         }
@@ -89,6 +91,7 @@ public class CommitMessageManipulator {
         return isAssigneeOverridden;
     }
 
+
     public Optional<String> getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) {
         Optional<String> jiraIssueKey = Optional.empty();
         String firstLineOfCommitMessage = commitFileContents.get(0);
@@ -107,6 +110,7 @@ public class CommitMessageManipulator {
                             if (word.toUpperCase().startsWith(pattern.toUpperCase())) {
                                 logger.debug("Found issue key {}", word);
                                 jiraIssueKey = Optional.of(word.toUpperCase());
+                                jiraIssueKeyFound = true;
                                 break;
                             }
                         }
@@ -120,6 +124,44 @@ public class CommitMessageManipulator {
         }
 
         return jiraIssueKey;
+    }
+
+    /**
+     * Removes any options from the original commit message (first line)
+     * @return
+     */
+    public String getStrippedCommitMessage() {
+        ArrayList<String> strippedCommitMessage = (ArrayList<String>) commitFileContents;
+        strippedCommitMessage.set(0, getStripped(strippedCommitMessage.get(0)));
+        return String.join(System.lineSeparator(), strippedCommitMessage);
+
+    }
+
+    private String getStripped(final String firstLine) {
+
+
+        //String[] wordList = firstLine.split("\\s+");
+        List<String> arrayList = Arrays.asList(firstLine);
+        String[] wordList = arrayList.get(0).split("\\s+");
+
+        if (isCommitOverridden() || jiraIssueKeyFound) {
+            wordList[0] = wordList[0].toUpperCase();
+        }
+
+        // Have to iterate through all words
+        for (int i = 1; i < wordList.length; i++) {
+            String word = wordList[i];
+            // Assignee
+            if (word.equalsIgnoreCase(JIRA_ASSIGNEE_OVERRIDDEN)) {
+                wordList = Arrays.copyOf(wordList, wordList.length-1);
+            }
+
+            if (word.equalsIgnoreCase(JIRA_COMMUNICATION_OVERRIDDEN)) {
+                wordList = Arrays.copyOf(wordList, wordList.length-1);
+            }
+        }
+
+        return String.join(" ", wordList);
     }
 }
 
