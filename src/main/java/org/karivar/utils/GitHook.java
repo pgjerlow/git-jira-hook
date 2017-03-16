@@ -12,6 +12,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.karivar.utils.domain.IssueKeyNotFoundException;
 import org.karivar.utils.domain.JiraIssue;
+import org.karivar.utils.other.UTF8Control;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -169,7 +170,7 @@ public class GitHook {
 
     private void loadI18nMessages(Optional<String> languageSettings) {
         messages = languageSettings.map(s -> ResourceBundle.getBundle("messages",
-                Locale.forLanguageTag(s))).orElseGet(() -> ResourceBundle.getBundle("messages"));
+                Locale.forLanguageTag(s), new UTF8Control())).orElseGet(() -> ResourceBundle.getBundle("messages"));
     }
 
     private Map<String, List<String>> loadIssueTypesAndStatuses() {
