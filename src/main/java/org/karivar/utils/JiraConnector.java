@@ -15,6 +15,7 @@ import com.atlassian.jira.rest.client.api.domain.IssueField;
 import com.atlassian.jira.rest.client.api.domain.IssueLink;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 import com.atlassian.util.concurrent.Promise;
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -22,7 +23,7 @@ import org.karivar.utils.domain.*;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
-import java.io.UnsupportedEncodingException;
+import java.net.ConnectException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
@@ -74,13 +75,7 @@ public class JiraConnector {
 
     private String getDecodedPassword(Optional<String> jiraEncodedPassword) {
         byte[] passwdBytes = Base64.getDecoder().decode(jiraEncodedPassword.get());
-        String decodedPassword = null;
-        try {
-            decodedPassword = new String(passwdBytes, "utf-8");
-        } catch (UnsupportedEncodingException e) {
-            logger.error("Unable to decode the password");
-        }
-        return decodedPassword;
+        return new String(passwdBytes, Charsets.UTF_8);
     }
 
     private URI getJiraAddressUri(Optional<String> jiraAddress) {
@@ -175,11 +170,25 @@ public class JiraConnector {
                 holder = new JiraIssueHolder(basicJiraIssue, issue);
 
             } catch (RestClientException e) {
+                if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 401) {
+                    // Forbidden access
+                    throw new IssueKeyNotFoundException("Unable to authorize access. " +
+                            "Check your JIRA username");
+                }
                 if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 403) {
                     // Forbidden access
                     throw new IssueKeyNotFoundException("Unable to authorize access. " +
-                            "Check your JIRA username and password");
-                } else e.printStackTrace();
+                            "Check your JIRA password");
+                }
+                if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 404) {
+                    // Forbidden access
+                    throw new IssueKeyNotFoundException("The service is not found. Check your JIRA address");
+                }
+                else e.printStackTrace();
+            } catch (Throwable e) {
+                if (e.getCause() instanceof ConnectException) {
+                    throw new IssueKeyNotFoundException("Connection to JIRA is refused. Check your JIRA address");
+                }
             }
         }
         return holder;
