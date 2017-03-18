@@ -32,9 +32,13 @@ public class JiraConnector {
 
     private final Logger logger = LoggerFactory.getLogger(JiraConnector.class);
     private IssueRestClient issueRestClient;
+    private ResourceBundle messages;
 
     private static String PARENT_JSON_NAME = "parent";
 
+    public JiraConnector(ResourceBundle bundle) {
+       messages = bundle;
+    }
 
     /**
      * Connects to the JIRA instance.
@@ -57,7 +61,7 @@ public class JiraConnector {
             issueRestClient = restClient.getIssueClient();
 
         } else {
-            logger.error("Connection information to JIRA is missing. Cannot continue");
+            logger.error(messages.getString("error.jira.connection"));
         }
     }
 
@@ -86,7 +90,7 @@ public class JiraConnector {
                 jiraAddressUri = new URI(jiraAddress.get());
             }
         } catch (URISyntaxException e) {
-            logger.error("The JIRA address is misspelled.");
+            logger.error(messages.getString("error.jira.connection.url"));
         }
         return jiraAddressUri;
     }
@@ -172,22 +176,20 @@ public class JiraConnector {
             } catch (RestClientException e) {
                 if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 401) {
                     // Forbidden access
-                    throw new IssueKeyNotFoundException("Unable to authorize access. " +
-                            "Check your JIRA username");
+                    throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.401"));
                 }
                 if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 403) {
                     // Forbidden access
-                    throw new IssueKeyNotFoundException("Unable to authorize access. " +
-                            "Check your JIRA password");
+                    throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.403"));
                 }
                 if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 404) {
                     // Forbidden access
-                    throw new IssueKeyNotFoundException("The service is not found. Check your JIRA address");
+                    throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.404"));
                 }
                 else e.printStackTrace();
             } catch (Throwable e) {
                 if (e.getCause() instanceof ConnectException) {
-                    throw new IssueKeyNotFoundException("Connection to JIRA is refused. Check your JIRA address");
+                    throw new IssueKeyNotFoundException(messages.getString("error.jira.connection.refused"));
                 }
             }
         }
@@ -204,7 +206,7 @@ public class JiraConnector {
             basicJiraIssue = new BasicJiraIssue(parentKey, parentSummary);
 
         } catch (JSONException e) {
-            e.printStackTrace();
+            logger.error(e.getLocalizedMessage());
         }
         return basicJiraIssue;
     }

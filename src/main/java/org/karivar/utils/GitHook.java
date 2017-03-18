@@ -38,13 +38,13 @@ public class GitHook {
 
     public static void main(String[] args) {
         githook = new GitHook();
-        manipulator = new CommitMessageManipulator();
         githook.init(args);
     }
 
     private void init(String[] args) {
 
         loadI18nMessages(GitConfig.getLanguageSettings());
+        manipulator = new CommitMessageManipulator(messages);
         printInitalText();
 
         if (args != null && args.length > 0) {
@@ -69,7 +69,7 @@ public class GitHook {
             // Contact JIRA, fetch JIRA issue and check state and return populated issue
             logger.debug("Preparing to communicate with Jira");
 
-            jiraConnector = new JiraConnector();
+            jiraConnector = new JiraConnector(messages);
             jiraConnector.connectToJira(GitConfig.getJiraUsername(),
                     GitConfig.getJiraEncodedPassword(), GitConfig.getJiraAddress());
 
@@ -269,10 +269,6 @@ public class GitHook {
         return false;
     }
 
-    private void updateCommitMessage(List<String> manipulatedMessage) {
-        manipulator.writeCommitMessage(manipulatedMessage);
-    }
-
     private void loadApplicationProperties() {
         // Load JIRA project list
         jiraProjectKeys =  GitConfig.getJiraProjects();
@@ -336,9 +332,9 @@ public class GitHook {
             properties.load(reader);
 
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(messages.getString("error.loadfile.io"), filename);
         } catch (IllegalArgumentException e) {
-            e.printStackTrace();
+            logger.error(messages.getString("error.loadfile.malformed"), filename);
         }
         return properties;
     }

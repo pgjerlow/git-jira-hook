@@ -10,21 +10,14 @@ package org.karivar.utils;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.io.FileWriteMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-//import java.nio.charset.StandardCharsets;
-//import java.nio.file.Files;
-//import java.nio.file.Path;
-//import java.nio.file.Paths;
 import com.google.common.io.Files;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+
+import java.util.*;
 
 
 /**
@@ -38,23 +31,26 @@ public class CommitMessageManipulator {
     private static final String JIRA_ASSIGNEE_OVERRIDDEN = "-A";
     private static final String JIRA_COMMIT_OVERRIDDEN = "NONE";
 
+    private ResourceBundle messages;
     private String commitMessageFilename;
     private List<String> commitFileContents = null;
     private boolean jiraIssueKeyFound;
+
+    public CommitMessageManipulator(ResourceBundle bundle) {
+        messages = bundle;
+    }
 
 
     public void loadCommitMessage(String filename) {
 
         // Load the commit message file
-        //Path path = Paths.get(filename);
         try {
-            //commitFileContents = Files.readAllLines(path, StandardCharsets.UTF_8);
             File file = new File(filename);
             commitFileContents = Files.readLines(file, Charsets.UTF_8);
             logger.debug("The file contents are: \n\t {}", commitFileContents);
             commitMessageFilename = filename;
         } catch (IOException e) {
-            logger.error("Unable to read commit message file. \nGot exception {}", e);
+            logger.error(messages.getString("loadfile.commit.io"), e);
         }
     }
 
@@ -63,7 +59,7 @@ public class CommitMessageManipulator {
         try {
             Files.asCharSink(file, Charsets.UTF_8).writeLines(commitFileContents);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(messages.getString("writefile.commit.io"), e);
         }
     }
 
@@ -135,10 +131,10 @@ public class CommitMessageManipulator {
                     }
                 }
             } else {
-                logger.error("The jira issue pattern is not found");
+                logger.error(messages.getString("githook.jiraissue.pattern.notfound"));
             }
         }  else {
-                logger.error("The commit line is empty");
+                logger.error(messages.getString("githook.jiraissue.empty"));
         }
 
         return jiraIssueKey;
