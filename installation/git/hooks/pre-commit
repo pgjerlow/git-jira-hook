@@ -1,0 +1,54 @@
+#################################################
+# Copyright (C) 2017 Per Ivar Gjerløw
+# All rights reserved.
+#
+# This software may be modified and distributed under the terms
+# of the MIT license.  See the LICENSE file for details.
+#
+# Description:
+#   This file checks and downloads the newest version of the git hook either from Nexus or copy from local location
+#   Then executes the git hook when user commits something to git.
+##################################################
+#!/usr/bin/env bash
+
+githooks_filepath=.git/hooks
+git_hook_filename=githook.jar
+
+# UNCOMMENT THESE LINES IF NEXUS IS USED BY YOUR ORGANIZATION TO HANDLE MAVEN FILES
+###################################### Download the latest from nexus repository #######################################
+#NEXUS_ADDRESS=http://example.com
+#NEXUS_REPOSITORY_NAME=public
+#GITHOOK_MAVEN_GROUP_ID=org.karivar
+#GITHOOK_MAVEN_ARTIFACT_ID=git-jira-hook
+#
+# Download the SHA-1 checksum for the latest git hook version from Nexus
+#checksum_new_hook=` curl -s "http://${NEXUS_ADDRESS}/nexus/service/local/artifact/maven/resolve?g=${GITHOOK_MAVEN_GROUP_ID}&a=${GITHOOK_MAVEN_ARTIFACT_ID}&v=RELEASE&r=${NEXUS_REPOSITORY_NAME}" | grep sha1 | sed -e 's,.*<sha1>\([^<]*\)</sha1>.*,\1,g'`
+#
+#checksum_existing_hook=`openssl dgst -sha1 ${githooks_filepath}/util/${git_hook_filename} | awk '{ print $2 }'`
+#
+#if [ ${checksum_existing_hook} != ${checksum_new_hook} ];
+#  then
+#    echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/${git_hook_filename} with checksum=${checksum_new_hook}"
+#
+#    # Download the new version
+#    mvn org.apache.maven.plugins:maven-dependency-plugin:2.4:get -Dartifact=${GITHOOK_MAVEN_GROUP_ID}:${GITHOOK_MAVEN_ARTIFACT_ID}:RELEASE:jar -Dtransitive=false -Ddest=${githooks_filepath}/util/${git_hook_filename} -q
+#fi
+
+# UNCOMMENT THESE LINES IF YOU'RE ONLY USING A COMMON DIRECTORY FOR UPDATING THE GITHOOK
+############################ Copying the githook file from a local path ################################################
+GITHOOK_COMMON_PATH=../../example_location
+
+md5sum_existing_hook=`md5sum ${githooks_filepath}/util/${git_hook_filename} | awk '{ print $1 }'`
+md5sum_new_hook=`md5sum ${GITHOOK_COMMON_PATH}/${git_hook_filename} | awk '{ print $1 }'`
+
+if [ ${md5sum_existing_hook} != ${md5sum_new_hook} ];
+  then
+    echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/${git_hook_filename} with checksum=${md5sum_new_hook}"
+
+    # Copy the new version
+    cp ${GITHOOK_COMMON_PATH}/${git_hook_filename} ${githooks_filepath}/util/
+fi
+
+
+# Execute the git hook
+java -jar ${githooks_filepath}/util/${git_hook_filename} ${githooks_filepath}/COMMIT_EDITMSG
