@@ -138,19 +138,19 @@ public class JiraConnector {
         return  jiraIssue;
     }
 
-    private List<BasicJiraIssue> getRelatedIssues(Issue issue, List<String> issuesLinks) {
+    private List<BasicJiraIssue> getRelatedIssues(Issue issue, List<String> issuesLinkList) {
         Iterator<IssueLink> issueLinkIterator;
         issueLinkIterator = issue.getIssueLinks().iterator();
         List<BasicJiraIssue> relatedJiraIssues = Lists.newArrayList();
 
         JiraIssueHolder relatedIssueHolder;
-        Iterator<String> issueLinksIterator = issuesLinks.iterator();
+
         while (issueLinkIterator.hasNext()) {
             IssueLink issueLink = issueLinkIterator.next();
-
-            while (issueLinksIterator.hasNext()) {
-                String issueLinkType = issueLinksIterator.next();
-                if (issueLink.getIssueLinkType().getName().equalsIgnoreCase(issueLinkType)) {
+            Iterator<String> issueLinkStringsIterator = issuesLinkList.iterator();
+            while (issueLinkStringsIterator.hasNext()) {
+                String issueLinkTypeName = issueLinkStringsIterator.next();
+                if (issueLink.getIssueLinkType().getName().equalsIgnoreCase(issueLinkTypeName)) {
                     Optional<String> relatedIssueKey = Optional.of(issueLink.getTargetIssueKey());
                     relatedIssueHolder = fetchBasicJiraIssue(relatedIssueKey);
                     relatedJiraIssues.add(relatedIssueHolder.getJiraIssue());
@@ -183,13 +183,16 @@ public class JiraConnector {
                     throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.403"));
                 }
                 if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 404) {
-                    // Forbidden access
-                    throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.404"));
+                    // The issue doesn't exist
+                    throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.404")
+                            + jiraIssueKey.get());
                 }
                 else e.printStackTrace();
             } catch (Throwable e) {
                 if (e.getCause() instanceof ConnectException) {
                     throw new IssueKeyNotFoundException(messages.getString("error.jira.connection.refused"));
+                } else {
+                    e.printStackTrace();
                 }
             }
         }

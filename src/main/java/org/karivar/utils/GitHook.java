@@ -195,10 +195,6 @@ public class GitHook {
                 BasicJiraIssue relatedIssue = relatedIssuesIterator.next();
                 String message = messages.getString("commit.convention.relatedissue") +
                         relatedIssue.getKey() + " " + relatedIssue.getSummary();
-
-                if (relatedIssuesIterator.hasNext()) {
-                    message += System.lineSeparator();
-                }
                 relatedIssueInformation.add(message);
             }
         }
