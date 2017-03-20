@@ -4,6 +4,9 @@
 *.ipr
 *.iws
 
+# Ignores files when using Mac.
+.DS_Store
+
 commitMsg.txt
 dependency-reduced-pom.xml
 *.class
