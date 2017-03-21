@@ -21,7 +21,7 @@ if [ ! -n "$(git config --global githook.jira.username)" ];
 then
    read -p "Enter username used by JIRA: " jira_username
 
-   if [ ! -n ${jira_username} ];
+   if [ ! -z ${jira_username} ];
    then
      git config --global githook.jira.username ${jira_username}
    fi
@@ -39,22 +39,34 @@ then
 	exit 1
   else
     # Encodes the password
-	encoded_password=$( openssl -enc base64 <<< ${jira_password} )
+	encoded_password=$( openssl enc -base64 <<< ${jira_password} )
 	git config --global githook.jira.password ${encoded_password}
   fi
 fi
 
+# JIRA address
 if [ ! -n "$(git config --global githook.jira.address)" ];
 then
    read -p "Enter JIRA address (e.g https://jira.domain.com): " jira_address
 
-   if [ ! -n ${jira_address} ];
+   if [ ! -z ${jira_address} ];
    then
      git config --global githook.jira.address ${jira_address}
    fi
 fi
 
 # ------------- LOCAL GIT CONFIG SETTINGS -------------------------------
+# Language settings
+if [ ! -n "$(git config --local githook.language)" ];
+then
+   read -p "Enter language (e.g EN or NO): " language
+
+   if [ ! -z ${language} ];
+   then
+     git config --local githook.language ${language}
+   fi
+fi
+
 # JIRA project keys
   if [ ! -n "$(git config --local githook.jira.projectkey)" ];
   then
@@ -71,15 +83,9 @@ fi
        read -p "Add more JIRA projects [y/n]? " -n 1 -r add_projectkey_response
      done
   fi
-
-# Language settings
-if [ ! -n "$(git config --local githook.language)" ];
-then
-   read -p "Enter language (e.g EN or NO): " language
-
-   if [ ! -n ${language} ];
-   then
-     git config --local githook.language ${language}
-   fi
-fi
 ############################## GIT CONFIGURATION SETTINGS ##############################
+
+# Copy the necessary pre-commit file to its correct location
+if [ ! -e util/hooks/pre-commit ]; then
+    cp -p util/hooks/pre-commit .git/hooks/
+fi
