@@ -9,10 +9,14 @@
 #   This installation file updates the git config
 #   and copies the pre-commit file to its correct location
 ##################################################
-#!/usr/bin/env bash
+#!/bin/sh
+
+# the root of the common path is the root of the project 
+GITHOOK_COMMON_PATH=example_path
 
 # Make sure all scripts have unix end line
 find . -name "*.sh" -exec dos2unix {} \;
+find . -name "*pre-commit" -exec dos2unix {} \;
 
 ############################## GIT CONFIGURATION SETTINGS ##############################
 # ------------- GLOBAL GIT CONFIG SETTINGS -------------------------------
@@ -86,6 +90,6 @@ fi
 ############################## GIT CONFIGURATION SETTINGS ##############################
 
 # Copy the necessary pre-commit file to its correct location
-if [ ! -e util/hooks/pre-commit ]; then
-    cp -p util/hooks/pre-commit .git/hooks/
+if [ ! -e .git/hooks/pre-commit ]; then
+    cp -p ${GITHOOK_COMMON_PATH}/hooks/pre-commit .git/hooks/
 fi
