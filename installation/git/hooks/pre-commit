@@ -1,3 +1,4 @@
+#!/bin/sh
 #################################################
 # Copyright (C) 2017 Per Ivar Gjerløw
 # All rights reserved.
@@ -9,10 +10,11 @@
 #   This file checks and downloads the newest version of the git hook either from Nexus or copy from local location
 #   Then executes the git hook when user commits something to git.
 ##################################################
-#!/usr/bin/env bash
 
 githooks_filepath=.git/hooks
+git_hook_new_filename=git-jira-hook-1.0.0.jar
 git_hook_filename=githook.jar
+
 
 # UNCOMMENT THESE LINES IF NEXUS IS USED BY YOUR ORGANIZATION TO HANDLE MAVEN FILES
 ###################################### Download the latest from nexus repository #######################################
@@ -36,19 +38,31 @@ git_hook_filename=githook.jar
 
 # UNCOMMENT THESE LINES IF YOU'RE ONLY USING A COMMON DIRECTORY FOR UPDATING THE GITHOOK
 ############################ Copying the githook file from a local path ################################################
-GITHOOK_COMMON_PATH=../../example_location
 
-md5sum_existing_hook=`md5sum ${githooks_filepath}/util/${git_hook_filename} | awk '{ print $1 }'`
-md5sum_new_hook=`md5sum ${GITHOOK_COMMON_PATH}/${git_hook_filename} | awk '{ print $1 }'`
+# the root of the common path is the root of the project 
+GITHOOK_COMMON_PATH=example_path
 
-if [ ${md5sum_existing_hook} != ${md5sum_new_hook} ];
-  then
-    echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/${git_hook_filename} with checksum=${md5sum_new_hook}"
+if [ -e ${githooks_filepath}/util/${git_hook_filename} ]; then
+  md5sum_existing_hook=`md5sum ${githooks_filepath}/util/${git_hook_filename}| awk '{ print $1 }'`
+  md5sum_new_hook=`md5sum ${GITHOOK_COMMON_PATH}/${git_hook_new_filename} | awk '{ print $1 }'`
 
-    # Copy the new version
-    cp ${GITHOOK_COMMON_PATH}/${git_hook_filename} ${githooks_filepath}/util/
+  if [ ${md5sum_existing_hook} != ${md5sum_new_hook} ];
+    then
+      echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/${git_hook_filename} with checksum=${md5sum_new_hook}"
+
+      # Copy the new version
+      cp -p ${GITHOOK_COMMON_PATH}/${git_hook_new_filename} ${githooks_filepath}/util/
+  fi
+
+else
+  mkdir ${githooks_filepath}/util
+  cp -p ${GITHOOK_COMMON_PATH}/${git_hook_new_filename} ${githooks_filepath}/util/
 fi
 
+# Rename the copied file
+if [ -e ${githooks_filepath}/util/${git_hook_new_filename} ]; then
+    mv ${githooks_filepath}/util/${git_hook_new_filename} ${githooks_filepath}/util/${git_hook_filename}
+fi
 
 # Execute the git hook
-java -jar ${githooks_filepath}/util/${git_hook_filename} ${githooks_filepath}/COMMIT_EDITMSG
+java -jar ${githooks_filepath}/util/${git_hook_filename} .git/COMMIT_EDITMSG
