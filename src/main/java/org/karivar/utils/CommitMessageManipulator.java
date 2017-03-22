@@ -10,10 +10,12 @@ package org.karivar.utils;
 import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import com.google.common.io.Files;
 
@@ -49,8 +51,11 @@ public class CommitMessageManipulator {
             commitFileContents = Files.readLines(file, Charsets.UTF_8);
             logger.debug("The file contents are: \n\t {}", commitFileContents);
             commitMessageFilename = filename;
+
+        } catch (FileNotFoundException e) {
+            logger.error(messages.getString("error.loadfile.filenotfound") + filename);
         } catch (IOException e) {
-            logger.error(messages.getString("loadfile.commit.io"), e);
+            logger.error(messages.getString("loadfile.commit.io"));
         }
     }
 
@@ -65,12 +70,13 @@ public class CommitMessageManipulator {
 
     public boolean isCommunicationOverridden() {
         boolean isOverridden = false;
+        if (commitFileContents != null && commitFileContents.size() > 0) {
+            String[] wordList = commitFileContents.get(0).split("\\s+");
+            String last = wordList[wordList.length - 1];
 
-        String[] wordList = commitFileContents.get(0).split("\\s+");
-        String last = wordList[wordList.length - 1];
-
-        if (last.equalsIgnoreCase(JIRA_COMMUNICATION_OVERRIDDEN)) {
-            isOverridden = true;
+            if (last.equalsIgnoreCase(JIRA_COMMUNICATION_OVERRIDDEN)) {
+                isOverridden = true;
+            }
         }
         return isOverridden;
     }
@@ -78,28 +84,29 @@ public class CommitMessageManipulator {
     public boolean isCommitOverridden() {
 
         boolean isCommitOverridden = false;
+        if (commitFileContents != null && commitFileContents.size() > 0) {
+            String[] wordList = commitFileContents.get(0).split("\\s+");
 
-        String[] wordList = commitFileContents.get(0).split("\\s+");
+            if (wordList.length > 0) {
+                String first = wordList[0];
 
-        if (wordList.length > 0) {
-            String first = wordList[0];
-
-            if (first.equalsIgnoreCase(JIRA_COMMIT_OVERRIDDEN)) {
-                isCommitOverridden = true;
+                if (first.equalsIgnoreCase(JIRA_COMMIT_OVERRIDDEN)) {
+                    isCommitOverridden = true;
+                }
             }
         }
-
         return isCommitOverridden;
     }
 
     public boolean isAssigneeOverridden() {
         boolean isAssigneeOverridden = false;
+        if (commitFileContents != null && commitFileContents.size() > 0) {
+            String[] wordList = commitFileContents.get(0).split("\\s+");
+            String last = wordList[wordList.length - 1];
 
-        String[] wordList = commitFileContents.get(0).split("\\s+");
-        String last = wordList[wordList.length - 1];
-
-        if (last.equalsIgnoreCase(JIRA_ASSIGNEE_OVERRIDDEN)) {
-            isAssigneeOverridden = true;
+            if (last.equalsIgnoreCase(JIRA_ASSIGNEE_OVERRIDDEN)) {
+                isAssigneeOverridden = true;
+            }
         }
 
         return isAssigneeOverridden;
@@ -108,33 +115,35 @@ public class CommitMessageManipulator {
 
     public Optional<String> getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) {
         Optional<String> jiraIssueKey = Optional.empty();
-        String firstLineOfCommitMessage = commitFileContents.get(0);
-        logger.debug("Starting getJiraIssueKeyFromCommitMessage({}, {})", firstLineOfCommitMessage, jiraIssuePattern);
+        if (commitFileContents != null && commitFileContents.size() > 0) {
+            String firstLineOfCommitMessage = commitFileContents.get(0);
+            logger.debug("Starting getJiraIssueKeyFromCommitMessage({}, {})", firstLineOfCommitMessage, jiraIssuePattern);
 
-        if (!Strings.isNullOrEmpty(firstLineOfCommitMessage)) {
+            if (!Strings.isNullOrEmpty(firstLineOfCommitMessage)) {
 
-            if (!Strings.isNullOrEmpty(jiraIssuePattern)) {
-                Splitter jiraPatternSplitter = Splitter.on(" ");
-                List<String> commitLineWords = jiraPatternSplitter.splitToList(firstLineOfCommitMessage);
-                List<String> jiraIssuePatterns = jiraPatternSplitter.splitToList(jiraIssuePattern);
+                if (!Strings.isNullOrEmpty(jiraIssuePattern)) {
+                    Splitter jiraPatternSplitter = Splitter.on(" ");
+                    List<String> commitLineWords = jiraPatternSplitter.splitToList(firstLineOfCommitMessage);
+                    List<String> jiraIssuePatterns = jiraPatternSplitter.splitToList(jiraIssuePattern);
 
-                if (!commitLineWords.isEmpty()) {
-                    for (String pattern : jiraIssuePatterns) {
-                        for (String word : commitLineWords) {
-                            if (word.toUpperCase().startsWith(pattern.toUpperCase())) {
-                                logger.debug("Found issue key {}", word);
-                                jiraIssueKey = Optional.of(word.toUpperCase());
-                                jiraIssueKeyFound = true;
-                                break;
+                    if (!commitLineWords.isEmpty()) {
+                        for (String pattern : jiraIssuePatterns) {
+                            for (String word : commitLineWords) {
+                                if (word.toUpperCase().startsWith(pattern.toUpperCase())) {
+                                    logger.debug("Found issue key {}", word);
+                                    jiraIssueKey = Optional.of(word.toUpperCase());
+                                    jiraIssueKeyFound = true;
+                                    break;
+                                }
                             }
                         }
                     }
+                } else {
+                    logger.error(messages.getString("githook.jiraissue.pattern.notfound"));
                 }
             } else {
-                logger.error(messages.getString("githook.jiraissue.pattern.notfound"));
-            }
-        }  else {
                 logger.error(messages.getString("githook.jiraissue.empty"));
+            }
         }
 
         return jiraIssueKey;
@@ -145,8 +154,12 @@ public class CommitMessageManipulator {
      * @return
      */
     public List<String> getStrippedCommitMessage() {
-        ArrayList<String> strippedCommitMessage = (ArrayList<String>) commitFileContents;
-        strippedCommitMessage.set(0, getStripped(strippedCommitMessage.get(0)));
+        ArrayList<String> strippedCommitMessage = Lists.newArrayList();
+        if (commitFileContents != null && commitFileContents.size() > 0) {
+            strippedCommitMessage = (ArrayList<String>) commitFileContents;
+            strippedCommitMessage.set(0, getStripped(strippedCommitMessage.get(0)));
+        }
+
         return strippedCommitMessage;
 
     }
