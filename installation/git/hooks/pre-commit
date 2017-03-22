@@ -59,6 +59,8 @@ else
   cp -p ${GITHOOK_COMMON_PATH}/${git_hook_new_filename} ${githooks_filepath}/util/
 fi
 
+######################################### Rename the git hook and execute it ###########################################
+
 # Rename the copied file
 if [ -e ${githooks_filepath}/util/${git_hook_new_filename} ]; then
     mv ${githooks_filepath}/util/${git_hook_new_filename} ${githooks_filepath}/util/${git_hook_filename}
