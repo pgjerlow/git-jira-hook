@@ -8,7 +8,6 @@
 #
 # Description:
 #   This file checks and downloads the newest version of the git hook either from Nexus or copy from local location
-#   Then executes the git hook when user commits something to git.
 ##################################################
 
 githooks_filepath=.git/hooks
@@ -65,6 +64,3 @@ fi
 if [ -e ${githooks_filepath}/util/${git_hook_new_filename} ]; then
     mv ${githooks_filepath}/util/${git_hook_new_filename} ${githooks_filepath}/util/${git_hook_filename}
 fi
-
-# Execute the git hook
-java -jar ${githooks_filepath}/util/${git_hook_filename} .git/COMMIT_EDITMSG

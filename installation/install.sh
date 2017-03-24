@@ -92,4 +92,5 @@ fi
 # Copy the necessary pre-commit file to its correct location
 if [ ! -e .git/hooks/pre-commit ]; then
     cp -p ${GITHOOK_COMMON_PATH}/hooks/pre-commit .git/hooks/
+	 cp -p ${GITHOOK_COMMON_PATH}/hooks/commit-msg .git/hooks/
 fi

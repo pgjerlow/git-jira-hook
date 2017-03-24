@@ -7,7 +7,7 @@
 #
 # Description:
 #   This script removes the git config for the githook
-#   and removes the pre-commit file and the githook file.
+#   and removes the pre-commit, commit-msg and the githook file.
 ##################################################
 #!/bin/sh
 
@@ -25,6 +25,10 @@ git config --unset githook.language
 # Remove files used by the git-jira hook
 if [ -e .git/hooks/pre-commit ]; then
   rm -f .git/hooks/pre-commit
+fi
+
+if [ -e .git/hooks/commit-msg ]; then
+  rm -f .git/hooks/commit-msg
 fi
 
 if [ -d .git/hooks/util ]; then
