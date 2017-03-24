@@ -1,3 +1,4 @@
+#!/bin/sh
 #################################################
 # Copyright (C) 2017 Per Ivar Gjerløw
 # All rights reserved.
@@ -7,9 +8,8 @@
 #
 # Description:
 #   This installation file updates the git config
-#   and copies the pre-commit file to its correct location
+#   and copies the pre-commit and commit-msg file to their correct path
 ##################################################
-#!/bin/sh
 
 # the root of the common path is the root of the project 
 GITHOOK_COMMON_PATH=example_path
@@ -17,6 +17,7 @@ GITHOOK_COMMON_PATH=example_path
 # Make sure all scripts have unix end line
 find . -name "*.sh" -exec dos2unix {} \;
 find . -name "*pre-commit" -exec dos2unix {} \;
+find . -name "*commit-msg" -exec dos2unix {} \;
 
 ############################## GIT CONFIGURATION SETTINGS ##############################
 # ------------- GLOBAL GIT CONFIG SETTINGS -------------------------------
@@ -43,7 +44,7 @@ then
 	exit 1
   else
     # Encodes the password
-	encoded_password=$( openssl enc -base64 <<< ${jira_password} )
+	encoded_password=$( echo -n "${jira_password}" | base64 )
 	git config --global githook.jira.password ${encoded_password}
   fi
 fi
@@ -92,5 +93,5 @@ fi
 # Copy the necessary pre-commit file to its correct location
 if [ ! -e .git/hooks/pre-commit ]; then
     cp -p ${GITHOOK_COMMON_PATH}/hooks/pre-commit .git/hooks/
-	 cp -p ${GITHOOK_COMMON_PATH}/hooks/commit-msg .git/hooks/
+	cp -p ${GITHOOK_COMMON_PATH}/hooks/commit-msg .git/hooks/
 fi

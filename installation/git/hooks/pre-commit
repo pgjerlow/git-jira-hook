@@ -10,44 +10,52 @@
 #   This file checks and downloads the newest version of the git hook either from Nexus or copy from local location
 ##################################################
 
-githooks_filepath=.git/hooks
-git_hook_new_filename=git-jira-hook-1.0.0.jar
-git_hook_filename=githook.jar
+################################# These properties must be changed  ####################################################
 
+# Location of git hooks
+githooks_filepath=.git/hooks
+
+# Full name of the pre-built githook
+git_hook_new_filename=git-jira-hook-1.0.0.jar
+
+## The address of Nexus repository
+#NEXUS_ADDRESS=http://example.com
+#
+## The name of the Nexus repository where the githook is residing
+#NEXUS_REPOSITORY_NAME=public
+
+# the root of the common path is the root of the project
+GITHOOK_COMMON_PATH=example_path
 
 # UNCOMMENT THESE LINES IF NEXUS IS USED BY YOUR ORGANIZATION TO HANDLE MAVEN FILES
 ###################################### Download the latest from nexus repository #######################################
-#NEXUS_ADDRESS=http://example.com
-#NEXUS_REPOSITORY_NAME=public
+
 #GITHOOK_MAVEN_GROUP_ID=org.karivar
 #GITHOOK_MAVEN_ARTIFACT_ID=git-jira-hook
 #
 # Download the SHA-1 checksum for the latest git hook version from Nexus
-#checksum_new_hook=` curl -s "http://${NEXUS_ADDRESS}/nexus/service/local/artifact/maven/resolve?g=${GITHOOK_MAVEN_GROUP_ID}&a=${GITHOOK_MAVEN_ARTIFACT_ID}&v=RELEASE&r=${NEXUS_REPOSITORY_NAME}" | grep sha1 | sed -e 's,.*<sha1>\([^<]*\)</sha1>.*,\1,g'`
+#checksum_new_hook=` curl -s "${NEXUS_ADDRESS}/nexus/service/local/artifact/maven/resolve?g=${GITHOOK_MAVEN_GROUP_ID}&a=${GITHOOK_MAVEN_ARTIFACT_ID}&v=RELEASE&r=${NEXUS_REPOSITORY_NAME}" | grep sha1 | sed -e 's,.*<sha1>\([^<]*\)</sha1>.*,\1,g'`
 #
-#checksum_existing_hook=`openssl dgst -sha1 ${githooks_filepath}/util/${git_hook_filename} | awk '{ print $2 }'`
+#checksum_existing_hook=`openssl dgst -sha1 ${githooks_filepath}/util/githook.jar | awk '{ print $2 }'`
 #
 #if [ ${checksum_existing_hook} != ${checksum_new_hook} ];
 #  then
-#    echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/${git_hook_filename} with checksum=${checksum_new_hook}"
+#    echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/githook.jar with checksum=${checksum_new_hook}"
 #
 #    # Download the new version
-#    mvn org.apache.maven.plugins:maven-dependency-plugin:2.4:get -Dartifact=${GITHOOK_MAVEN_GROUP_ID}:${GITHOOK_MAVEN_ARTIFACT_ID}:RELEASE:jar -Dtransitive=false -Ddest=${githooks_filepath}/util/${git_hook_filename} -q
+#    mvn org.apache.maven.plugins:maven-dependency-plugin:3.0.0:get -Dartifact=${GITHOOK_MAVEN_GROUP_ID}:${GITHOOK_MAVEN_ARTIFACT_ID}:RELEASE:jar -Dtransitive=false -Ddest=${githooks_filepath}/util/githook.jar -q
 #fi
 
 # UNCOMMENT THESE LINES IF YOU'RE ONLY USING A COMMON DIRECTORY FOR UPDATING THE GITHOOK
 ############################ Copying the githook file from a local path ################################################
 
-# the root of the common path is the root of the project 
-GITHOOK_COMMON_PATH=example_path
-
-if [ -e ${githooks_filepath}/util/${git_hook_filename} ]; then
-  md5sum_existing_hook=`md5sum ${githooks_filepath}/util/${git_hook_filename}| awk '{ print $1 }'`
+if [ -e ${githooks_filepath}/util/githook.jar ]; then
+  md5sum_existing_hook=`md5sum ${githooks_filepath}/util/githook.jar| awk '{ print $1 }'`
   md5sum_new_hook=`md5sum ${GITHOOK_COMMON_PATH}/${git_hook_new_filename} | awk '{ print $1 }'`
 
   if [ ${md5sum_existing_hook} != ${md5sum_new_hook} ];
     then
-      echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/${git_hook_filename} with checksum=${md5sum_new_hook}"
+      echo "There is a more recent git hook available. Replacing ${githooks_filepath}/util/githook.jar with checksum=${md5sum_new_hook}"
 
       # Copy the new version
       cp -p ${GITHOOK_COMMON_PATH}/${git_hook_new_filename} ${githooks_filepath}/util/
@@ -62,5 +70,5 @@ fi
 
 # Rename the copied file
 if [ -e ${githooks_filepath}/util/${git_hook_new_filename} ]; then
-    mv ${githooks_filepath}/util/${git_hook_new_filename} ${githooks_filepath}/util/${git_hook_filename}
+    mv ${githooks_filepath}/util/${git_hook_new_filename} ${githooks_filepath}/util/githook.jar
 fi

@@ -1,3 +1,4 @@
+#!/bin/sh
 #################################################
 # Copyright (C) 2017 Per Ivar Gjerløw
 # All rights reserved.
@@ -9,7 +10,6 @@
 #   This script removes the git config for the githook
 #   and removes the pre-commit, commit-msg and the githook file.
 ##################################################
-#!/bin/sh
 
 # removes any git config settings for git hook in the global config
 if [ ! -z "$(git config --global githook.jira)" ]; then
