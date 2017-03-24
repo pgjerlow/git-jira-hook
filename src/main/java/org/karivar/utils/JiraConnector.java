@@ -68,7 +68,7 @@ public class JiraConnector {
     /**
      * Fetches the populated JIRA issue for the given issue key.
      * @param jiraIssueKey the given jira issue id
-     * @param issueLinks
+     * @param issueLinks a list containing all names of JIRA issue link names
      * @return the fully populated JIRA issue
      * @throws IssueKeyNotFoundException in case of problems (connectivity, malformed messages, invalid argument, etc.)
      */
@@ -188,7 +188,7 @@ public class JiraConnector {
                             + jiraIssueKey.get());
                 }
                 else e.printStackTrace();
-            } catch (Throwable e) {
+            } catch (Exception e) {
                 if (e.getCause() instanceof ConnectException) {
                     throw new IssueKeyNotFoundException(messages.getString("error.jira.connection.refused"));
                 } else {
