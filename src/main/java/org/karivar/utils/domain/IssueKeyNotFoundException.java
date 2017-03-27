@@ -11,4 +11,8 @@ public class IssueKeyNotFoundException extends RuntimeException {
     public IssueKeyNotFoundException(String message) {
         super(message);
     }
+
+    public IssueKeyNotFoundException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

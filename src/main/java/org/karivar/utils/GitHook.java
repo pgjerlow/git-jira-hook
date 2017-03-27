@@ -10,19 +10,17 @@ package org.karivar.utils;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.karivar.utils.domain.BasicJiraIssue;
 import org.karivar.utils.domain.IssueKeyNotFoundException;
 import org.karivar.utils.domain.JiraIssue;
 import org.karivar.utils.other.UTF8Control;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
 public class GitHook {
-    private static final String HOOK_VERSION = "0.0.1";
+    private static final String HOOK_VERSION = "0.5.0";
     private final Logger logger = LoggerFactory.getLogger(GitHook.class);
     private static GitHook githook;
     private ResourceBundle messages;
@@ -31,7 +29,7 @@ public class GitHook {
     private JiraIssue populatedIssue;
     private Map<String, List<String>> issueTypesAndStatuses;
     private List<String> issueLinks;
-    private Optional<String> jiraProjectKeys;
+    private String jiraProjectKeys;
     private boolean commitOverridden = false;
     private boolean jiraCommunicationOverridden = false;
     private boolean assigneeOverridden = false;
@@ -56,6 +54,18 @@ public class GitHook {
         } else {
             logger.error(messages.getString("error.githook.nocommitfile"));
         }
+    }
+
+    private void loadApplicationProperties() {
+        // Load JIRA project list
+        jiraProjectKeys =  GitConfig.getJiraProjects();
+
+        // Load JIRA issue types and their accepted statuses.
+        issueTypesAndStatuses = loadIssueTypesAndStatuses();
+
+        // Load JIRA issue links
+        issueLinks = loadIssueLinks();
+
     }
 
     private void fetchPopulatedJiraIssue() {
@@ -103,15 +113,12 @@ public class GitHook {
         }
 
         if (statusOK && assigneeOK) {
-            logger.debug("Status is OK");
-
-            List<String> manipulatedMessage = manipulator.getStrippedCommitMessage();
-            manipulatedMessage = addTraceabilityInformationToMessage(manipulatedMessage);
-            logger.debug("The manipulated message is {}", manipulatedMessage);
-            manipulator.writeCommitMessage(manipulatedMessage);
+            // Status is OK. Start manipulating commit message and accept commits to repo
+            manipulator.manipulateCommitMessage(populatedIssue, getHookInformation(),
+                    jiraCommunicationOverridden, assigneeOverridden);
 
         } else {
-            logger.debug("Status is not OK. ");
+            // Status is not OK.
             if (!statusOK) {
                 if (populatedIssue != null) {
                     logger.info(messages.getString("commitnotallowedstatus")
@@ -119,101 +126,16 @@ public class GitHook {
                 }
 
                 if (!assigneeOK) {
-                    logger.info(messages.getString("commitnotallowedassignee")
-                            + populatedIssue.getAssignee().get().getDisplayName());
+                    if (populatedIssue.getAssignee() != null && populatedIssue.getAssignee().isPresent()) {
+                        logger.info(messages.getString("commitnotallowedassignee")
+                                + populatedIssue.getAssignee().get().getDisplayName());
+                    } else {
+                        logger.info(messages.getString("commitnotallowedassigneeunknown"));
+                    }
                 }
             }
+            System.exit(1);
         }
-    }
-
-    /**
-     * This method adds traceability information to the message according to the convention below
-     * <ORIGINAL_JIRAISSUE_KEY> <COMMIT MESSAGE><br>
-     *<empty line><br>
-     *summary: <JIRAISSUE_SUMMARY><br>
-     *sub-task of: <PARENT_JIRAISSUE_KEY> <PARENT__JIRAISSUE_SUMMARY> (optional)<br>
-     *related to: <RELATED_JIRAISSUE_KEY> <RELATED_JIRAISSUE_SUMMARY> (optional)<br>
-     *<empty line> (optional)<br>
-     *<additional information> (optional)<br>
-     *<hook version information><br>
-     * @param manipulatedMessage
-     * @return the message which conforms to the convention
-     */
-    private List<String> addTraceabilityInformationToMessage(final List<String> manipulatedMessage) {
-        ArrayList<String> addedTraceabilityMessage = (ArrayList<String>) manipulatedMessage;
-        addedTraceabilityMessage.add("");
-        String summaryInfo = getSummaryInformation();
-
-        if (summaryInfo !=null) {
-            addedTraceabilityMessage.add(summaryInfo);
-        }
-
-        if (populatedIssue != null && populatedIssue.isSubtask()) {
-            addedTraceabilityMessage.add(getParentIssueInformation());
-        }
-
-        List<String> relatedIssues = getRelatedIssuesInformation();
-        if (relatedIssues != null) {
-            addedTraceabilityMessage.addAll(relatedIssues);
-        }
-
-        List<String> additionalInformation = getAdditionalInformation();
-
-        if (additionalInformation.size() >= 1) {
-            addedTraceabilityMessage.addAll(additionalInformation);
-        }
-
-        addedTraceabilityMessage.add(getHookInformation());
-
-
-        return addedTraceabilityMessage;
-    }
-
-    private String getSummaryInformation() {
-        if (populatedIssue != null) {
-            return messages.getString("commit.convention.summary") + populatedIssue.getSummary();
-        }
-        return null;
-    }
-
-    private String getParentIssueInformation() {
-        if (populatedIssue.getParentIssue() != null && populatedIssue.getParentIssue().isPresent()) {
-            BasicJiraIssue parent = populatedIssue.getParentIssue().get();
-            return messages.getString("commit.convention.parentissue") + parent.getKey() + " " + parent.getSummary();
-        }
-        return null;
-    }
-
-    private List<String> getRelatedIssuesInformation() {
-        List<String>relatedIssueInformation = null;
-        if (populatedIssue != null &&
-                populatedIssue.getRelatedIssues() != null &&
-                populatedIssue.getRelatedIssues().size() > 0) {
-            Iterator<BasicJiraIssue> relatedIssuesIterator = populatedIssue.getRelatedIssues().iterator();
-            relatedIssueInformation = new ArrayList<>();
-            while (relatedIssuesIterator.hasNext()) {
-                BasicJiraIssue relatedIssue = relatedIssuesIterator.next();
-                String message = messages.getString("commit.convention.relatedissue") +
-                        relatedIssue.getKey() + " " + relatedIssue.getSummary();
-                relatedIssueInformation.add(message);
-            }
-        }
-        return relatedIssueInformation;
-    }
-
-    private List<String> getAdditionalInformation() {
-
-        List<String> additionalInfo = new ArrayList<>();
-
-        if (jiraCommunicationOverridden) {
-            additionalInfo.add(messages.getString("commit.convention.communicationoverridden"));
-        }
-
-        if (assigneeOverridden) {
-            additionalInfo.add(messages.getString("commit.convention.assigneeoverridden"));
-        }
-
-        return additionalInfo;
     }
 
     private String getHookInformation() {
@@ -225,7 +147,7 @@ public class GitHook {
             String assignedUsername = populatedIssue.getAssignee().
                     get().getName();
 
-            if (assignedUsername.equals(GitConfig.getJiraUsername().get())) {
+            if (GitConfig.getJiraUsername() != null && assignedUsername.equals(GitConfig.getJiraUsername())) {
                 return true;
             }
         } else {
@@ -250,11 +172,8 @@ public class GitHook {
             List<String> issueTypeStatuses = issueTypesAndStatuses.get(populatedIssue.getIssueTypeName());
 
             if (issueTypeStatuses != null && !issueTypeStatuses.isEmpty()) {
-                Iterator<String> statusIterator = issueTypeStatuses.iterator();
 
-                while (statusIterator.hasNext()) {
-                    String status = statusIterator.next();
-
+                for (String status : issueTypeStatuses) {
                     if (status.equals(populatedIssue.getStatus())) {
                         return true;
                     }
@@ -265,21 +184,11 @@ public class GitHook {
         return false;
     }
 
-    private void loadApplicationProperties() {
-        // Load JIRA project list
-        jiraProjectKeys =  GitConfig.getJiraProjects();
-
-        // Load JIRA issue types and their accepted statuses.
-        issueTypesAndStatuses = loadIssueTypesAndStatuses();
-
-        // Load JIRA issue links
-        issueLinks = loadIssueLinks();
-
-    }
-
-    private void loadI18nMessages(Optional<String> languageSettings) {
-        messages = languageSettings.map(s -> ResourceBundle.getBundle("messages",
-                Locale.forLanguageTag(s), new UTF8Control())).orElseGet(() -> ResourceBundle.getBundle("messages"));
+    private void loadI18nMessages(String languageSettings) {
+        if (languageSettings != null) {
+            messages = ResourceBundle.getBundle("messages", Locale.forLanguageTag(languageSettings),
+                    new UTF8Control());
+        } else messages = ResourceBundle.getBundle("messages");
     }
 
     private Map<String, List<String>> loadIssueTypesAndStatuses() {
@@ -288,9 +197,8 @@ public class GitHook {
         Properties properties = loadPropertiesFile("issuetypes.properties");
 
         if (!properties.isEmpty()) {
-            Iterator<Object> propertiesKeysIterator = properties.keySet().iterator();
-            while (propertiesKeysIterator.hasNext()) {
-                String key = (String)propertiesKeysIterator.next();
+            for (Object property : properties.keySet()) {
+                String key = (String) property;
 
                 String values = properties.getProperty(key);
 
@@ -302,7 +210,6 @@ public class GitHook {
                 issueTypesAndStatuses.put(key, items);
             }
         }
-
 
         return issueTypesAndStatuses;
     }
@@ -339,13 +246,13 @@ public class GitHook {
         logger.info(messages.getString("startup.information"), HOOK_VERSION);
     }
 
-    private String getJiraIssueKey(Optional<String> jiraProjectPattern) {
+    private String getJiraIssueKey(String jiraProjectPattern) {
         String issueKey = null;
 
-        if (jiraProjectPattern.isPresent()) {
+        if (jiraProjectPattern != null) {
 
             Optional<String> possibleIssueKey = manipulator.getJiraIssueKeyFromCommitMessage(
-                    jiraProjectPattern.get());
+                    jiraProjectPattern);
 
             if (possibleIssueKey.isPresent()) {
                 issueKey = possibleIssueKey.get();

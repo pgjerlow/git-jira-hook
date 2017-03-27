@@ -34,8 +34,6 @@ public class JiraConnector {
     private IssueRestClient issueRestClient;
     private ResourceBundle messages;
 
-    private static String PARENT_JSON_NAME = "parent";
-
     public JiraConnector(ResourceBundle bundle) {
        messages = bundle;
     }
@@ -46,17 +44,17 @@ public class JiraConnector {
      * @param jiraEncodedPassword the base46 encoded password
      * @param jiraAddress the JIRA address
      */
-    public void connectToJira(Optional<String> jiraUsername,
-                                 Optional<String> jiraEncodedPassword,
-                                 Optional<String> jiraAddress) {
-        if (jiraUsername.isPresent() && jiraEncodedPassword.isPresent() && jiraAddress.isPresent()) {
+    public void connectToJira( final String jiraUsername,
+                                 final String jiraEncodedPassword,
+                                 final String jiraAddress) {
+        if (jiraUsername != null && jiraEncodedPassword != null && jiraAddress != null) {
             final AsynchronousJiraRestClientFactory factory = new AsynchronousJiraRestClientFactory();
 
             URI jiraAddressUri = getJiraAddressUri(jiraAddress);
             String decodedPassword = getDecodedPassword(jiraEncodedPassword);
 
             JiraRestClient restClient = factory.createWithBasicHttpAuthentication(
-                    jiraAddressUri, jiraUsername.get(), decodedPassword);
+                    jiraAddressUri, jiraUsername, decodedPassword);
 
             issueRestClient = restClient.getIssueClient();
 
@@ -77,17 +75,20 @@ public class JiraConnector {
         return mapJiraIssue(fetchBasicJiraIssue(jiraIssueKey), issueLinks);
     }
 
-    private String getDecodedPassword(Optional<String> jiraEncodedPassword) {
-        byte[] passwdBytes = Base64.getDecoder().decode(jiraEncodedPassword.get());
-        return new String(passwdBytes, Charsets.UTF_8);
+    private String getDecodedPassword(String jiraEncodedPassword) {
+        if (jiraEncodedPassword != null) {
+            byte[] passwordBytes = Base64.getDecoder().decode(jiraEncodedPassword);
+            return new String(passwordBytes, Charsets.UTF_8);
+        }
+        return null;
     }
 
-    private URI getJiraAddressUri(Optional<String> jiraAddress) {
+    private URI getJiraAddressUri(String jiraAddress) {
 
         URI jiraAddressUri = null;
         try {
-            if (jiraAddress.isPresent()) {
-                jiraAddressUri = new URI(jiraAddress.get());
+            if (jiraAddress != null) {
+                jiraAddressUri = new URI(jiraAddress);
             }
         } catch (URISyntaxException e) {
             logger.error(messages.getString("error.jira.connection.url"));
@@ -95,8 +96,8 @@ public class JiraConnector {
         return jiraAddressUri;
     }
 
-    private JiraIssue mapJiraIssue(JiraIssueHolder issueHolder, List<String> issueLinks) {
-
+    private JiraIssue mapJiraIssue(JiraIssueHolder issueHolder, List<String> issueLinks)
+            throws IssueKeyNotFoundException {
         Issue issue = issueHolder.getIssue();
         JiraIssue jiraIssue = new JiraIssue(issueHolder.getJiraIssue().getKey(),
                 issueHolder.getJiraIssue().getSummary());
@@ -122,7 +123,7 @@ public class JiraConnector {
             }
 
             // parent issue
-            IssueField parentIssueField = issue.getField(PARENT_JSON_NAME);
+            IssueField parentIssueField = issue.getField("parent");
             if (parentIssueField != null) {
                 BasicJiraIssue basicJiraIssue = getParentIssueInfo(parentIssueField);
                 jiraIssue.setParentIssue(Optional.of(basicJiraIssue));
@@ -140,26 +141,27 @@ public class JiraConnector {
 
     private List<BasicJiraIssue> getRelatedIssues(Issue issue, List<String> issuesLinkList) {
         Iterator<IssueLink> issueLinkIterator;
-        issueLinkIterator = issue.getIssueLinks().iterator();
-        List<BasicJiraIssue> relatedJiraIssues = Lists.newArrayList();
+        if (issue.getIssueLinks() != null ) {
+            issueLinkIterator = issue.getIssueLinks().iterator();
+            List<BasicJiraIssue> relatedJiraIssues = Lists.newArrayList();
 
-        JiraIssueHolder relatedIssueHolder;
+            JiraIssueHolder relatedIssueHolder;
 
-        while (issueLinkIterator.hasNext()) {
-            IssueLink issueLink = issueLinkIterator.next();
-            Iterator<String> issueLinkStringsIterator = issuesLinkList.iterator();
-            while (issueLinkStringsIterator.hasNext()) {
-                String issueLinkTypeName = issueLinkStringsIterator.next();
-                if (issueLink.getIssueLinkType().getName().equalsIgnoreCase(issueLinkTypeName)) {
-                    Optional<String> relatedIssueKey = Optional.of(issueLink.getTargetIssueKey());
-                    relatedIssueHolder = fetchBasicJiraIssue(relatedIssueKey);
-                    relatedJiraIssues.add(relatedIssueHolder.getJiraIssue());
+            while (issueLinkIterator.hasNext()) {
+                IssueLink issueLink = issueLinkIterator.next();
+                Iterator<String> issueLinkStringsIterator = issuesLinkList.iterator();
+                while (issueLinkStringsIterator.hasNext()) {
+                    String issueLinkTypeName = issueLinkStringsIterator.next();
+                    if (issueLink.getIssueLinkType().getName().equalsIgnoreCase(issueLinkTypeName)) {
+                        Optional<String> relatedIssueKey = Optional.of(issueLink.getTargetIssueKey());
+                        relatedIssueHolder = fetchBasicJiraIssue(relatedIssueKey);
+                        relatedJiraIssues.add(relatedIssueHolder.getJiraIssue());
+                    }
                 }
             }
-
-
+            return relatedJiraIssues;
         }
-        return relatedJiraIssues;
+        return Lists.newArrayList();
     }
 
     private JiraIssueHolder fetchBasicJiraIssue(Optional<String> jiraIssueKey) throws IssueKeyNotFoundException {
@@ -199,8 +201,8 @@ public class JiraConnector {
         return holder;
     }
 
-    private BasicJiraIssue getParentIssueInfo(IssueField parentIssueField) {
-        BasicJiraIssue basicJiraIssue = null;
+    private BasicJiraIssue getParentIssueInfo(IssueField parentIssueField) throws IssueKeyNotFoundException {
+        BasicJiraIssue basicJiraIssue;
         JSONObject jsonObject = (JSONObject) parentIssueField.getValue();
         try {
             String parentKey = jsonObject.getString("key");
@@ -209,7 +211,7 @@ public class JiraConnector {
             basicJiraIssue = new BasicJiraIssue(parentKey, parentSummary);
 
         } catch (JSONException e) {
-            logger.error(e.getLocalizedMessage());
+            throw new IssueKeyNotFoundException("JSONException", e);
         }
         return basicJiraIssue;
     }

@@ -11,6 +11,8 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import org.karivar.utils.domain.BasicJiraIssue;
+import org.karivar.utils.domain.JiraIssue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +61,7 @@ public class CommitMessageManipulator {
         }
     }
 
-    public void writeCommitMessage(List<String> commitFileContents) {
+    private void writeCommitMessage(List<String> commitFileContents) {
         File file = new File(commitMessageFilename);
         try {
             Files.asCharSink(file, Charsets.UTF_8).writeLines(commitFileContents);
@@ -113,7 +115,7 @@ public class CommitMessageManipulator {
     }
 
 
-    public Optional<String> getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) {
+    protected Optional<String> getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) {
         Optional<String> jiraIssueKey = Optional.empty();
         if (commitFileContents != null && commitFileContents.size() > 0) {
             String firstLineOfCommitMessage = commitFileContents.get(0);
@@ -151,23 +153,124 @@ public class CommitMessageManipulator {
 
     /**
      * Removes any options from the original commit message (first line only)
-     * @return
+     * @return the first line
      */
     public List<String> getStrippedCommitMessage() {
         ArrayList<String> strippedCommitMessage = Lists.newArrayList();
         if (commitFileContents != null && commitFileContents.size() > 0) {
             strippedCommitMessage = (ArrayList<String>) commitFileContents;
-            strippedCommitMessage.set(0, getStripped(strippedCommitMessage.get(0)));
+            strippedCommitMessage.set(0, getStrippedFirstCommitLine(strippedCommitMessage.get(0)));
         }
 
         return strippedCommitMessage;
-
     }
 
-    private String getStripped(final String firstLine) {
+    /**
+     * Manipulates the commit message and adds information according to the convention below. In addition
+     * updates the commit message with the manipulated message.<br>
+     * &lt;ORIGINAL_JIRAISSUE_KEY&gt; &lt;COMMIT MESSAGE&gt;<br>
+     * &lt;empty line&gt;<br>
+     * summary: &lt;JIRAISSUE_SUMMARY&gt;<br>
+     * sub-task of: &lt;PARENT_JIRAISSUE_KEY&gt; &lt;PARENT__JIRAISSUE_SUMMARY&gt; (optional)<br>
+     * related to: &lt;RELATED_JIRAISSUE_KEY&gt; &lt;RELATED_JIRAISSUE_SUMMARY&gt; (optional)<br>
+     * &lt;empty line&gt; (optional)<br>
+     * &lt;additional information&gt; (optional)<br>
+     * &lt;hook version information&gt;<br>
+     * @param populatedIssue the populated message
+     * @param hookInformation string containing information about the hook
+     * @param communicationOverridden true if the communication with JIRA is overridden
+     * @param assigneeOverridden true if assignee is overrridden
+     */
+    public void manipulateCommitMessage(JiraIssue populatedIssue, String hookInformation,
+                                        boolean communicationOverridden, boolean assigneeOverridden) {
+        List<String> manipulatedMessage = getStrippedCommitMessage();
+        manipulatedMessage = addTraceabilityInformationToMessage(manipulatedMessage, populatedIssue,
+                hookInformation, communicationOverridden, assigneeOverridden);
+        logger.debug("The manipulated message is {}", manipulatedMessage);
+        writeCommitMessage(manipulatedMessage);
+    }
+
+    private List<String> addTraceabilityInformationToMessage(final List<String> manipulatedMessage,
+                                                             JiraIssue populatedIssue, String hookInformation,
+                                                             boolean communicationOverrriden,
+                                                             boolean assigneeOverriden) {
+        ArrayList<String> addedTraceabilityMessage = (ArrayList<String>) manipulatedMessage;
+        addedTraceabilityMessage.add("");
+        String summaryInfo = getSummaryInformation(populatedIssue);
+
+        if (summaryInfo !=null) {
+            addedTraceabilityMessage.add(summaryInfo);
+        }
+
+        if (populatedIssue != null && populatedIssue.isSubtask()) {
+            addedTraceabilityMessage.add(getParentIssueInformation(populatedIssue));
+        }
+
+        List<String> relatedIssues = getRelatedIssuesInformation(populatedIssue);
+        if (relatedIssues != null) {
+            addedTraceabilityMessage.addAll(relatedIssues);
+        }
+
+        List<String> additionalInformation = getAdditionalInformation(communicationOverrriden, assigneeOverriden);
+
+        if (additionalInformation.size() >= 1) {
+            addedTraceabilityMessage.addAll(additionalInformation);
+        }
+
+        addedTraceabilityMessage.add(hookInformation);
 
 
-        //String[] wordList = firstLine.split("\\s+");
+        return addedTraceabilityMessage;
+    }
+
+    private String getSummaryInformation(JiraIssue populatedIssue) {
+        if (populatedIssue != null) {
+            return messages.getString("commit.convention.summary") + populatedIssue.getSummary();
+        }
+        return null;
+    }
+
+    private String getParentIssueInformation(JiraIssue populatedIssue) {
+        if (populatedIssue.getParentIssue() != null && populatedIssue.getParentIssue().isPresent()) {
+            BasicJiraIssue parent = populatedIssue.getParentIssue().get();
+            return messages.getString("commit.convention.parentissue") + parent.getKey() + " " + parent.getSummary();
+        }
+        return null;
+    }
+
+    private List<String> getRelatedIssuesInformation(JiraIssue populatedIssue) {
+        List<String>relatedIssueInformation = null;
+        if (populatedIssue != null &&
+                populatedIssue.getRelatedIssues() != null &&
+                populatedIssue.getRelatedIssues().size() > 0) {
+            Iterator<BasicJiraIssue> relatedIssuesIterator = populatedIssue.getRelatedIssues().iterator();
+            relatedIssueInformation = new ArrayList<>();
+            while (relatedIssuesIterator.hasNext()) {
+                BasicJiraIssue relatedIssue = relatedIssuesIterator.next();
+                String message = messages.getString("commit.convention.relatedissue") +
+                        relatedIssue.getKey() + " " + relatedIssue.getSummary();
+                relatedIssueInformation.add(message);
+            }
+        }
+        return relatedIssueInformation;
+    }
+
+    private List<String> getAdditionalInformation(boolean jiraCommunicationOverridden, boolean assigneeOverridden) {
+
+        List<String> additionalInfo = new ArrayList<>();
+
+        if (jiraCommunicationOverridden) {
+            additionalInfo.add(messages.getString("commit.convention.communicationoverridden"));
+        }
+
+        if (assigneeOverridden) {
+            additionalInfo.add(messages.getString("commit.convention.assigneeoverridden"));
+        }
+
+        return additionalInfo;
+    }
+
+    private String getStrippedFirstCommitLine(final String firstLine) {
         List<String> arrayList = Arrays.asList(firstLine);
         String[] wordList = arrayList.get(0).split("\\s+");
 
@@ -175,7 +278,8 @@ public class CommitMessageManipulator {
             wordList[0] = wordList[0].toUpperCase();
         }
 
-        // Have to iterate through all words
+        // Have to iterate through all words in the 1st line of the commit message
+        // and remove the options
         for (int i = 1; i < wordList.length; i++) {
             String word = wordList[i];
             // Assignee
