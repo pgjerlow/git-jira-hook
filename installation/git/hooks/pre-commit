@@ -10,10 +10,10 @@
 #   This file checks and downloads the newest version of the git hook either from Nexus or copy from local location
 ##################################################
 
-################################# These properties must be changed  ####################################################
-
 # Location of git hooks
 githooks_filepath=.git/hooks
+
+################################# These properties must be changed  ####################################################
 
 # Full name of the pre-built githook
 git_hook_new_filename=git-jira-hook-1.0.0.jar
