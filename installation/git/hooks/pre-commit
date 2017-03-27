@@ -19,7 +19,7 @@ githooks_filepath=.git/hooks
 git_hook_new_filename=git-jira-hook-1.0.0.jar
 
 ## The address of Nexus repository
-#NEXUS_ADDRESS=http://example.com
+#NEXUS_ADDRESS=https://example.nexus.com
 #
 ## The name of the Nexus repository where the githook is residing
 #NEXUS_REPOSITORY_NAME=public
@@ -66,7 +66,7 @@ else
   cp -p ${GITHOOK_COMMON_PATH}/${git_hook_new_filename} ${githooks_filepath}/util/
 fi
 
-######################################### Rename the git hook and execute it ###########################################
+######################################### Rename the git hook ##########################################################
 
 # Rename the copied file
 if [ -e ${githooks_filepath}/util/${git_hook_new_filename} ]; then
