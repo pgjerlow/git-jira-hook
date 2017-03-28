@@ -48,16 +48,20 @@ public class CommitMessageManipulator {
     public void loadCommitMessage(String filename) {
 
         // Load the commit message file
-        try {
-            File file = new File(filename);
-            commitFileContents = Files.readLines(file, Charsets.UTF_8);
-            logger.debug("The file contents are: \n\t {}", commitFileContents);
-            commitMessageFilename = filename;
+        if (!Strings.isNullOrEmpty(filename)) {
+            try {
+                File file = new File(filename);
+                commitFileContents = Files.readLines(file, Charsets.UTF_8);
+                logger.debug("The file contents are: \n\t {}", commitFileContents);
+                commitMessageFilename = filename;
 
-        } catch (FileNotFoundException e) {
+            } catch (FileNotFoundException e) {
+                logger.error(messages.getString("error.loadfile.filenotfound") + filename);
+            } catch (IOException e) {
+                logger.error(messages.getString("loadfile.commit.io"));
+            }
+        } else {
             logger.error(messages.getString("error.loadfile.filenotfound") + filename);
-        } catch (IOException e) {
-            logger.error(messages.getString("loadfile.commit.io"));
         }
     }
 
@@ -153,7 +157,7 @@ public class CommitMessageManipulator {
 
     /**
      * Removes any options from the original commit message (first line only)
-     * @return the first line
+     * @return the first line without any options
      */
     public List<String> getStrippedCommitMessage() {
         ArrayList<String> strippedCommitMessage = Lists.newArrayList();

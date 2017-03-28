@@ -1,0 +1,1 @@
+flyaway-3 this commit message is not registered in the JIRA pattern.
