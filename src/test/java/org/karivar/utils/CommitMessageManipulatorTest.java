@@ -14,9 +14,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.karivar.utils.domain.JiraIssue;
 import org.karivar.utils.domain.User;
+import org.karivar.utils.other.UTF8Control;
 
 import java.io.File;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
 
@@ -32,7 +34,8 @@ public class CommitMessageManipulatorTest {
 
     @BeforeClass
     public static void setUpClass() {
-        resourceBundle = ResourceBundle.getBundle("messages");
+        resourceBundle = ResourceBundle.getBundle("messages", Locale.forLanguageTag("en"),
+                new UTF8Control());
     }
 
     @AfterClass
@@ -251,7 +254,7 @@ public class CommitMessageManipulatorTest {
         assertEquals(4, commitFileContents.size());
         assertEquals("example-1 Added som files for this issue", commitFileContents.get(0));
         assertEquals("", commitFileContents.get(1));
-        assertEquals("Overskrift: Add functionality for accounting", commitFileContents.get(2));
+        assertEquals("Summary: Add functionality for accounting", commitFileContents.get(2));
         assertEquals("Hook v 1.0", commitFileContents.get(3));
     }
 
@@ -291,8 +294,8 @@ public class CommitMessageManipulatorTest {
         assertEquals(5, commitFileContents.size());
         assertEquals("EXAMPLE-1 even more functionality added for wrong assignee", commitFileContents.get(0));
         assertEquals("", commitFileContents.get(1));
-        assertEquals("Overskrift: Add functionality for accounting", commitFileContents.get(2));
-        assertEquals("Tilegnet bruker er overstyrt", commitFileContents.get(3));
+        assertEquals("Summary: Add functionality for accounting", commitFileContents.get(2));
+        assertEquals("Assigned user is overridden", commitFileContents.get(3));
         assertEquals("Hook v 1.0", commitFileContents.get(4));
     }
 
@@ -316,8 +319,8 @@ public class CommitMessageManipulatorTest {
         assertEquals(5, commitFileContents.size());
         assertEquals("EXAMPLE-1 added some more functionality", commitFileContents.get(0));
         assertEquals("", commitFileContents.get(1));
-        assertEquals("Overskrift: Add functionality for accounting", commitFileContents.get(2));
-        assertEquals("Kommunikasjon med JIRA er overstyrt", commitFileContents.get(3));
+        assertEquals("Summary: Add functionality for accounting", commitFileContents.get(2));
+        assertEquals("Communication with JIRA is overridden", commitFileContents.get(3));
         assertEquals("Hook v 1.0", commitFileContents.get(4));
     }
 
