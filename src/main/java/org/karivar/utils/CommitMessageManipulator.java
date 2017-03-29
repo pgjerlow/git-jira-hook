@@ -65,8 +65,15 @@ public class CommitMessageManipulator {
         }
     }
 
-    private void writeCommitMessage(List<String> commitFileContents) {
-        File file = new File(commitMessageFilename);
+
+    private void writeCommitMessage(List<String> commitFileContents, String filename) {
+        File file;
+        // Filename is not null for testing
+        if (Strings.isNullOrEmpty(filename)) {
+            file = new File(commitMessageFilename);
+        } else {
+            file = new File(filename);
+        }
         try {
             Files.asCharSink(file, Charsets.UTF_8).writeLines(commitFileContents);
         } catch (IOException e) {
@@ -182,22 +189,27 @@ public class CommitMessageManipulator {
      * &lt;hook version information&gt;<br>
      * @param populatedIssue the populated message
      * @param hookInformation string containing information about the hook
+     * @param filename The name of the file to be written to. Not null when testing only!
      * @param communicationOverridden true if the communication with JIRA is overridden
      * @param assigneeOverridden true if assignee is overrridden
      */
-    public void manipulateCommitMessage(JiraIssue populatedIssue, String hookInformation,
+    public void manipulateCommitMessage(JiraIssue populatedIssue, String hookInformation, String filename,
                                         boolean communicationOverridden, boolean assigneeOverridden) {
         List<String> manipulatedMessage = getStrippedCommitMessage();
-        manipulatedMessage = addTraceabilityInformationToMessage(manipulatedMessage, populatedIssue,
-                hookInformation, communicationOverridden, assigneeOverridden);
-        logger.debug("The manipulated message is {}", manipulatedMessage);
-        writeCommitMessage(manipulatedMessage);
+        if (manipulatedMessage != null && manipulatedMessage.size() > 0 ) {
+            manipulatedMessage = addTraceabilityInformationToMessage(manipulatedMessage, populatedIssue,
+                    hookInformation, communicationOverridden, assigneeOverridden);
+            logger.debug("The manipulated message is {}", manipulatedMessage);
+            writeCommitMessage(manipulatedMessage, filename);
+        } else {
+            logger.error("The commit message is empty");
+        }
     }
 
     private List<String> addTraceabilityInformationToMessage(final List<String> manipulatedMessage,
                                                              JiraIssue populatedIssue, String hookInformation,
-                                                             boolean communicationOverrriden,
-                                                             boolean assigneeOverriden) {
+                                                             boolean communicationOverridden,
+                                                             boolean assigneeOverridden) {
         ArrayList<String> addedTraceabilityMessage = (ArrayList<String>) manipulatedMessage;
         addedTraceabilityMessage.add("");
         String summaryInfo = getSummaryInformation(populatedIssue);
@@ -215,7 +227,7 @@ public class CommitMessageManipulator {
             addedTraceabilityMessage.addAll(relatedIssues);
         }
 
-        List<String> additionalInformation = getAdditionalInformation(communicationOverrriden, assigneeOverriden);
+        List<String> additionalInformation = getAdditionalInformation(communicationOverridden, assigneeOverridden);
 
         if (additionalInformation.size() >= 1) {
             addedTraceabilityMessage.addAll(additionalInformation);
@@ -275,10 +287,10 @@ public class CommitMessageManipulator {
     }
 
     private String getStrippedFirstCommitLine(final String firstLine) {
-        List<String> arrayList = Arrays.asList(firstLine);
+        List<String> arrayList = Collections.singletonList(firstLine);
         String[] wordList = arrayList.get(0).split("\\s+");
 
-        if (isCommitOverridden() || isCommunicationOverridden() || jiraIssueKeyFound) {
+        if (isCommitOverridden() || isCommunicationOverridden() || isAssigneeOverridden() || jiraIssueKeyFound) {
             wordList[0] = wordList[0].toUpperCase();
         }
 
@@ -291,6 +303,7 @@ public class CommitMessageManipulator {
                 wordList = Arrays.copyOf(wordList, wordList.length-1);
             }
 
+            // communication with JIRA
             if (word.equalsIgnoreCase(JIRA_COMMUNICATION_OVERRIDDEN)) {
                 wordList = Arrays.copyOf(wordList, wordList.length-1);
             }

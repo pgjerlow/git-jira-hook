@@ -26,4 +26,7 @@ hs_err_pid*
 # ignore log files
 debug.log
 
+# Ignore output file from testing
+src/test/resources/output.txt
+
 target

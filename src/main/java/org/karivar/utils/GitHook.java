@@ -114,7 +114,7 @@ public class GitHook {
 
         if (statusOK && assigneeOK) {
             // Status is OK. Start manipulating commit message and accept commits to repo
-            manipulator.manipulateCommitMessage(populatedIssue, getHookInformation(),
+            manipulator.manipulateCommitMessage(populatedIssue, getHookInformation(), null,
                     jiraCommunicationOverridden, assigneeOverridden);
 
         } else {
