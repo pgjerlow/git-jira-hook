@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Per Ivar Gjerløw
  * All rights reserved.
  *
@@ -204,6 +204,121 @@ public class CommitMessageManipulator {
         } else {
             logger.error("The commit message is empty");
         }
+    }
+
+    /**
+     *
+     * @return true if everything went fine. Otherwise false is returned.
+     */
+    public boolean checkStateAndManipulateCommitMessage(JiraIssue populatedIssue, boolean jiraCommunicationOverridden,
+                                                        String hookVersion) {
+        // check status against allowed statues
+        boolean statusOK = checkAllowedStatus(populatedIssue);
+
+        boolean assigneeOK;
+        boolean assigneeOverridden = isAssigneeOverridden();
+        if (!assigneeOverridden) {
+            // check assignee
+            assigneeOK = checkAssignee(populatedIssue);
+        } else if (isCommitOverridden()) {
+            // the commit is overridden. Thus assignee is not found, but OK anyway
+            assigneeOK = true;
+        } else {
+            assigneeOK = assigneeOverridden;
+        }
+
+        if (statusOK && assigneeOK) {
+            // Status is OK. Start manipulating commit message and accept commits to repo
+            manipulateCommitMessage(populatedIssue, getHookInformation(hookVersion), null,
+                    jiraCommunicationOverridden, assigneeOverridden);
+
+        } else {
+            // Status is not OK.
+            if (!statusOK) {
+                if (populatedIssue != null) {
+                    logger.info(messages.getString("commitnotallowedstatus")
+                            + populatedIssue.getStatus());
+                }
+
+                if (!assigneeOK) {
+                    if (populatedIssue.getAssignee() != null && populatedIssue.getAssignee().isPresent()) {
+                        logger.info(messages.getString("commitnotallowedassignee")
+                                + populatedIssue.getAssignee().get().getDisplayName());
+                    } else {
+                        logger.info(messages.getString("commitnotallowedassigneeunknown"));
+                    }
+                }
+            }
+            return false;
+        }
+        return true;
+    }
+
+    public String getJiraIssueKey(String jiraProjectPattern) {
+        String issueKey = null;
+
+        if (jiraProjectPattern != null) {
+
+            Optional<String> possibleIssueKey = getJiraIssueKeyFromCommitMessage(
+                    jiraProjectPattern);
+
+            if (possibleIssueKey.isPresent()) {
+                issueKey = possibleIssueKey.get();
+            }
+
+        } else {
+            logger.debug("There are no project keys registered in git config");
+        }
+
+        return issueKey;
+    }
+
+    private boolean checkAllowedStatus(JiraIssue populatedIssue) {
+
+        if (isCommunicationOverridden()) {
+            return true;
+        }
+
+        if (isCommitOverridden()){
+            // Have to handle if NONE as first parameter is used
+            return true;
+        }
+
+        if (populatedIssue != null) {
+            PropertyReader propertyReader = new PropertyReader(messages);
+            List<String> issueTypeStatuses = propertyReader.getIssueTypesAndStatuses()
+                    .get(populatedIssue.getIssueTypeName());
+
+            if (issueTypeStatuses != null && !issueTypeStatuses.isEmpty()) {
+
+                for (String status : issueTypeStatuses) {
+                    if (status.equals(populatedIssue.getStatus())) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private String getHookInformation(String version) {
+        return messages.getString("commit.convention.hookinformation") + version;
+    }
+
+    private boolean checkAssignee(JiraIssue populatedIssue) {
+        if (populatedIssue != null && populatedIssue.getAssignee().isPresent()) {
+            String assignedUsername = populatedIssue.getAssignee().
+                    get().getName();
+
+            if (GitConfig.getJiraUsername() != null && assignedUsername.equals(GitConfig.getJiraUsername())) {
+                return true;
+            }
+        } else {
+            return true;
+        }
+
+        return false;
     }
 
     private List<String> addTraceabilityInformationToMessage(final List<String> manipulatedMessage,
