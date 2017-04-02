@@ -12,15 +12,13 @@ import com.google.common.io.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.karivar.utils.domain.BasicJiraIssue;
 import org.karivar.utils.domain.JiraIssue;
 import org.karivar.utils.domain.User;
 import org.karivar.utils.other.UTF8Control;
 
 import java.io.File;
-import java.util.List;
-import java.util.Locale;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -322,6 +320,107 @@ public class CommitMessageManipulatorTest {
         assertEquals("Summary: Add functionality for accounting", commitFileContents.get(2));
         assertEquals("Communication with JIRA is overridden", commitFileContents.get(3));
         assertEquals("Hook v 1.0", commitFileContents.get(4));
+    }
+
+    @Test
+    public void manipulateCommitMessageEmptyCommitMultilineNormalCommit() throws Exception {
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        manipulator.manipulateCommitMessage(issue, "Hook v 1.0", PROCESSED_COMMIT_PATH, false, false);
+
+        File output = new File(PROCESSED_COMMIT_PATH);
+        List<String> commitFileContents = Files.readLines(output, Charsets.UTF_8);
+        assertNotNull(output);
+        assertEquals(10, commitFileContents.size());
+        assertEquals("example-1 Added som files for this issue", commitFileContents.get(0));
+        assertEquals("", commitFileContents.get(1));
+        assertEquals("This commit consists of the following changed files", commitFileContents.get(2));
+        assertEquals("", commitFileContents.get(3));
+        assertEquals("- foo.java This have been merged from example-2", commitFileContents.get(4));
+        assertEquals("- bar.java", commitFileContents.get(5));
+        assertEquals("- baz.java This have been merged from example-3", commitFileContents.get(6));
+        assertEquals("", commitFileContents.get(7));
+        assertEquals("Summary: Add functionality for accounting", commitFileContents.get(8));
+        assertEquals("Hook v 1.0", commitFileContents.get(9));
+    }
+
+    @Test
+    public void manipulateCommitMessageEmptyCommitMultilineNormalCommitParentIssue() throws Exception {
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setParentIssue(Optional.of(new BasicJiraIssue("EXAMPLE-4", "Accounting doesn't work properly")))
+                .setSubtask(true)
+                .build();
+
+        manipulator.manipulateCommitMessage(issue, "Hook v 1.0", PROCESSED_COMMIT_PATH, false, false);
+
+        File output = new File(PROCESSED_COMMIT_PATH);
+        List<String> commitFileContents = Files.readLines(output, Charsets.UTF_8);
+        assertNotNull(output);
+        assertEquals(11, commitFileContents.size());
+        assertEquals("example-1 Added som files for this issue", commitFileContents.get(0));
+        assertEquals("", commitFileContents.get(1));
+        assertEquals("This commit consists of the following changed files", commitFileContents.get(2));
+        assertEquals("", commitFileContents.get(3));
+        assertEquals("- foo.java This have been merged from example-2", commitFileContents.get(4));
+        assertEquals("- bar.java", commitFileContents.get(5));
+        assertEquals("- baz.java This have been merged from example-3", commitFileContents.get(6));
+        assertEquals("", commitFileContents.get(7));
+        assertEquals("Summary: Add functionality for accounting", commitFileContents.get(8));
+        assertEquals("Sub-task of: EXAMPLE-4 Accounting doesn't work properly", commitFileContents.get(9));
+        assertEquals("Hook v 1.0", commitFileContents.get(10));
+    }
+
+    @Test
+    public void manipulateCommitMessageEmptyCommitMultilineNormalCommitParentIssueRelatedIssues() throws Exception {
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
+
+        List<BasicJiraIssue> relatedIssues = new ArrayList<>();
+        relatedIssues.add(new BasicJiraIssue("ERROR-123", "Found an error in listing of accounts"));
+        relatedIssues.add(new BasicJiraIssue("EXAMPLE-5", "Listing of accounts are missing"));
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setParentIssue(Optional.of(new BasicJiraIssue("EXAMPLE-4", "Accounting doesn't work properly")))
+                .setRelatedIssues(relatedIssues)
+                .setSubtask(true)
+                .build();
+
+        manipulator.manipulateCommitMessage(issue, "Hook v 1.0", PROCESSED_COMMIT_PATH, false, false);
+
+        File output = new File(PROCESSED_COMMIT_PATH);
+        List<String> commitFileContents = Files.readLines(output, Charsets.UTF_8);
+        assertNotNull(output);
+        assertEquals(13, commitFileContents.size());
+        assertEquals("example-1 Added som files for this issue", commitFileContents.get(0));
+        assertEquals("", commitFileContents.get(1));
+        assertEquals("This commit consists of the following changed files", commitFileContents.get(2));
+        assertEquals("", commitFileContents.get(3));
+        assertEquals("- foo.java This have been merged from example-2", commitFileContents.get(4));
+        assertEquals("- bar.java", commitFileContents.get(5));
+        assertEquals("- baz.java This have been merged from example-3", commitFileContents.get(6));
+        assertEquals("", commitFileContents.get(7));
+        assertEquals("Summary: Add functionality for accounting", commitFileContents.get(8));
+        assertEquals("Sub-task of: EXAMPLE-4 Accounting doesn't work properly", commitFileContents.get(9));
+        assertEquals("Related to: ERROR-123 Found an error in listing of accounts", commitFileContents.get(10));
+        assertEquals("Related to: EXAMPLE-5 Listing of accounts are missing", commitFileContents.get(11));
+        assertEquals("Hook v 1.0", commitFileContents.get(12));
     }
 
 

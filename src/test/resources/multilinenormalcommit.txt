@@ -1,0 +1,7 @@
+example-1 Added som files for this issue
+
+This commit consists of the following changed files
+
+- foo.java This have been merged from example-2
+- bar.java
+- baz.java This have been merged from example-3
