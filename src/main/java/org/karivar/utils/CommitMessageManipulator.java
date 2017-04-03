@@ -44,8 +44,7 @@ public class CommitMessageManipulator {
         messages = bundle;
     }
 
-
-    public void loadCommitMessage(String filename) {
+    void loadCommitMessage(String filename) {
 
         // Load the commit message file
         if (!Strings.isNullOrEmpty(filename)) {
@@ -65,23 +64,7 @@ public class CommitMessageManipulator {
         }
     }
 
-
-    private void writeCommitMessage(List<String> commitFileContents, String filename) {
-        File file;
-        // Filename is not null for testing
-        if (Strings.isNullOrEmpty(filename)) {
-            file = new File(commitMessageFilename);
-        } else {
-            file = new File(filename);
-        }
-        try {
-            Files.asCharSink(file, Charsets.UTF_8).writeLines(commitFileContents);
-        } catch (IOException e) {
-            logger.error(messages.getString("writefile.commit.io"), e);
-        }
-    }
-
-    public boolean isCommunicationOverridden() {
+    boolean isCommunicationOverridden() {
         boolean isOverridden = false;
         if (commitFileContents != null && commitFileContents.size() > 0) {
             String[] wordList = commitFileContents.get(0).split("\\s+");
@@ -94,8 +77,7 @@ public class CommitMessageManipulator {
         return isOverridden;
     }
 
-    public boolean isCommitOverridden() {
-
+    boolean isCommitOverridden() {
         boolean isCommitOverridden = false;
         if (commitFileContents != null && commitFileContents.size() > 0) {
             String[] wordList = commitFileContents.get(0).split("\\s+");
@@ -111,7 +93,7 @@ public class CommitMessageManipulator {
         return isCommitOverridden;
     }
 
-    public boolean isAssigneeOverridden() {
+    boolean isAssigneeOverridden() {
         boolean isAssigneeOverridden = false;
         if (commitFileContents != null && commitFileContents.size() > 0) {
             String[] wordList = commitFileContents.get(0).split("\\s+");
@@ -121,12 +103,11 @@ public class CommitMessageManipulator {
                 isAssigneeOverridden = true;
             }
         }
-
         return isAssigneeOverridden;
     }
 
 
-    protected Optional<String> getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) {
+    Optional<String> getJiraIssueKeyFromCommitMessage(String jiraIssuePattern) {
         Optional<String> jiraIssueKey = Optional.empty();
         if (commitFileContents != null && commitFileContents.size() > 0) {
             String firstLineOfCommitMessage = commitFileContents.get(0);
@@ -143,7 +124,6 @@ public class CommitMessageManipulator {
                         for (String pattern : jiraIssuePatterns) {
                             for (String word : commitLineWords) {
                                 if (word.toUpperCase().startsWith(pattern.toUpperCase())) {
-                                    logger.debug("Found issue key {}", word);
                                     jiraIssueKey = Optional.of(word.toUpperCase());
                                     jiraIssueKeyFound = true;
                                     break;
@@ -166,7 +146,7 @@ public class CommitMessageManipulator {
      * Removes any options from the original commit message (first line only)
      * @return the first line without any options
      */
-    public List<String> getStrippedCommitMessage() {
+    List<String> getStrippedCommitMessage() {
         ArrayList<String> strippedCommitMessage = Lists.newArrayList();
         if (commitFileContents != null && commitFileContents.size() > 0) {
             strippedCommitMessage = (ArrayList<String>) commitFileContents;
@@ -187,13 +167,13 @@ public class CommitMessageManipulator {
      * &lt;empty line&gt; (optional)<br>
      * &lt;additional information&gt; (optional)<br>
      * &lt;hook version information&gt;<br>
-     * @param populatedIssue the populated message
+     * @param populatedIssue the populated JIRA issue
      * @param hookInformation string containing information about the hook
      * @param filename The name of the file to be written to. Not null when testing only!
      * @param communicationOverridden true if the communication with JIRA is overridden
      * @param assigneeOverridden true if assignee is overrridden
      */
-    public void manipulateCommitMessage(JiraIssue populatedIssue, String hookInformation, String filename,
+    void manipulateCommitMessage(JiraIssue populatedIssue, String hookInformation, String filename,
                                         boolean communicationOverridden, boolean assigneeOverridden) {
         List<String> manipulatedMessage = getStrippedCommitMessage();
         if (manipulatedMessage != null && manipulatedMessage.size() > 0 ) {
@@ -208,10 +188,14 @@ public class CommitMessageManipulator {
 
     /**
      *
+     * @param populatedIssue the populated JIRA issue
+     * @param jiraCommunicationOverridden true if the communication with JIRA is overridden
+     * @param filename The name of the file to be written to. Not null when testing only!
+     * @param hookVersion The version number of the hook
      * @return true if everything went fine. Otherwise false is returned.
      */
-    public boolean checkStateAndManipulateCommitMessage(JiraIssue populatedIssue, boolean jiraCommunicationOverridden,
-                                                        String hookVersion) {
+    boolean checkStateAndManipulateCommitMessage(JiraIssue populatedIssue, boolean jiraCommunicationOverridden,
+                                                 String filename, String hookVersion) {
         // check status against allowed statues
         boolean statusOK = checkAllowedStatus(populatedIssue);
 
@@ -229,7 +213,7 @@ public class CommitMessageManipulator {
 
         if (statusOK && assigneeOK) {
             // Status is OK. Start manipulating commit message and accept commits to repo
-            manipulateCommitMessage(populatedIssue, getHookInformation(hookVersion), null,
+            manipulateCommitMessage(populatedIssue, getHookInformation(hookVersion), filename,
                     jiraCommunicationOverridden, assigneeOverridden);
 
         } else {
@@ -254,7 +238,7 @@ public class CommitMessageManipulator {
         return true;
     }
 
-    public String getJiraIssueKey(String jiraProjectPattern) {
+    String getJiraIssueKeyFromPattern(String jiraProjectPattern) {
         String issueKey = null;
 
         if (jiraProjectPattern != null) {
@@ -271,6 +255,21 @@ public class CommitMessageManipulator {
         }
 
         return issueKey;
+    }
+
+    private void writeCommitMessage(List<String> commitFileContents, String filename) {
+        File file;
+        // Filename is not null for testing
+        if (Strings.isNullOrEmpty(filename)) {
+            file = new File(commitMessageFilename);
+        } else {
+            file = new File(filename);
+        }
+        try {
+            Files.asCharSink(file, Charsets.UTF_8).writeLines(commitFileContents);
+        } catch (IOException e) {
+            logger.error(messages.getString("writefile.commit.io"), e);
+        }
     }
 
     private boolean checkAllowedStatus(JiraIssue populatedIssue) {
@@ -307,7 +306,9 @@ public class CommitMessageManipulator {
     }
 
     private boolean checkAssignee(JiraIssue populatedIssue) {
-        if (populatedIssue != null && populatedIssue.getAssignee().isPresent()) {
+        if (populatedIssue != null
+                && populatedIssue.getAssignee() != null
+                && populatedIssue.getAssignee().isPresent()) {
             String assignedUsername = populatedIssue.getAssignee().
                     get().getName();
 

@@ -19,7 +19,6 @@ public class GitHook {
     private final Logger logger = LoggerFactory.getLogger(GitHook.class);
     private ResourceBundle messages;
     private static CommitMessageManipulator manipulator;
-    private boolean commitOverridden = false;
     private boolean jiraCommunicationOverridden = false;
 
     public static void main(String[] args) {
@@ -35,8 +34,6 @@ public class GitHook {
 
         if (args != null && args.length > 0) {
             manipulator.loadCommitMessage(args[0]);
-            //fetchPopulatedJiraIssue();
-
             JiraIssue populatedIssue = null;
             try {
                 populatedIssue = getPopulatedJiraIssue();
@@ -46,7 +43,7 @@ public class GitHook {
             }
 
             if (!manipulator.checkStateAndManipulateCommitMessage(populatedIssue,
-                    jiraCommunicationOverridden, HOOK_VERSION)) {
+                    jiraCommunicationOverridden, null, HOOK_VERSION)) {
                 System.exit(1);
             }
 
@@ -60,7 +57,7 @@ public class GitHook {
         //   1: override communication with JIRA altogether
         //   2: override (e.g force) commits
         jiraCommunicationOverridden = manipulator.isCommunicationOverridden();
-        commitOverridden = manipulator.isCommitOverridden();
+        boolean commitOverridden = manipulator.isCommitOverridden();
 
         if (!jiraCommunicationOverridden && !commitOverridden) {
             // Contact JIRA, fetch JIRA issue and check state and return populated issue
@@ -72,10 +69,10 @@ public class GitHook {
 
 
             Optional<String> issueKey = manipulator.getJiraIssueKeyFromCommitMessage(
-                    manipulator.getJiraIssueKey(GitConfig.getJiraProjects()));
+                    manipulator.getJiraIssueKeyFromPattern(GitConfig.getJiraProjects()));
 
             PropertyReader propertyReader = new PropertyReader(messages);
-            return jiraConnector.getJiraPopulatedIssue(issueKey,  propertyReader.loadIssueLinks());
+            return jiraConnector.getJiraPopulatedIssue(issueKey,  propertyReader.getIssueLinks());
         } else {
             logger.debug("Communication with JIRA is overridden or commit is overridden");
         }

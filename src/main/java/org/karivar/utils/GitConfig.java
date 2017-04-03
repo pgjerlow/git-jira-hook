@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2015 Per Ivar Gjerløw
  * All rights reserved.
  *
@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
  * This class is responsible for retrieving information from the local and global
  * git configuration
  */
-public class GitConfig {
+class GitConfig {
     private static final Logger logger = LoggerFactory.getLogger(GitConfig.class);
 
     private static final String JIRA_USERNAME = "githook.jira.username";
@@ -34,7 +34,7 @@ public class GitConfig {
      * Gets the Jira username from the global git configuration
      * @return the Jira username
      */
-    public static String getJiraUsername() {
+    static String getJiraUsername() {
 
         try {
             return getValueFromGitConfig(JIRA_USERNAME, true, false);
@@ -50,7 +50,7 @@ public class GitConfig {
      * Gets the base64 encoded Jira password from the global git configuration
      * @return the Jira password
      */
-    public static String getJiraEncodedPassword() {
+    static String getJiraEncodedPassword() {
 
         try {
             return getValueFromGitConfig(JIRA_PASSWORD, true, false);
@@ -66,7 +66,7 @@ public class GitConfig {
      * Gets the Jira address from the global git configuration
      * @return the Jira address
      */
-    public static String getJiraAddress() {
+    static String getJiraAddress() {
 
         try {
             return getValueFromGitConfig(JIRA_ADDRESS, true, false);
@@ -82,7 +82,7 @@ public class GitConfig {
      * Gets the language settings from the global git configuration
      * @return the language settings
      */
-    public static String getLanguageSettings() {
+    static String getLanguageSettings() {
         try {
             return getValueFromGitConfig(GIT_HOOK_LANGUAGE_SETTINGS, false, false);
         } catch (InterruptedException e) {
@@ -97,7 +97,7 @@ public class GitConfig {
      * Gets a list of potential Jira projects from the local git configuration
      * @return the Jira projects
      */
-    public static String getJiraProjects() {
+    static String getJiraProjects() {
 
         try {
             return getValueFromGitConfig(JIRA_PROJECTS, false, true);
@@ -156,17 +156,17 @@ public class GitConfig {
                 collect(Collectors.joining(System.lineSeparator()));
         scanner = new Scanner(results).useDelimiter(System.lineSeparator());
 
-        String joinedStrings = "";
+        StringBuilder joinedStrings = new StringBuilder();
         while (scanner.hasNextLine()) {
-            joinedStrings += scanner.nextLine();
+            joinedStrings.append(scanner.nextLine());
 
             if (scanner.hasNextLine()) {
-                joinedStrings += " ";
+                joinedStrings.append(" ");
             }
         }
 
-        if (!joinedStrings.isEmpty()) {
-            return joinedStrings;
+        if (joinedStrings.length() > 0) {
+            return joinedStrings.toString();
         }
 
         return null;

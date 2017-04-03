@@ -20,20 +20,49 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.ResourceBundle;
 
-public class PropertyReader {
+class PropertyReader {
 
     private ResourceBundle messages;
     private Map<String, List<String>> issueTypesAndStatuses;
+    private List<String> issueLinks;
     private final Logger logger = LoggerFactory.getLogger(PropertyReader.class);
 
-    public PropertyReader(ResourceBundle bundle) {
+     PropertyReader(ResourceBundle bundle) {
         messages = bundle;
     }
 
     /**
-     *
-     * @return
+     * Loads a property file containing all JIRA issue types and their corresponding statuses
+     * which allows code check-in.
+     * @return a map containing issue types and their statuses.
      */
+    Map<String, List<String>> getIssueTypesAndStatuses() {
+        loadIssueTypesAndStatuses();
+        return issueTypesAndStatuses;
+    }
+
+    /**
+     * Loads a property file containing names of the JIRA link names which will be used to connect relevant issues
+     * together to increase the level of traceability.
+     * @return a list containing all JIRA link names.
+     */
+    List<String> getIssueLinks() {
+        loadIssueLinks();
+        return issueLinks;
+    }
+
+
+     private void loadIssueLinks() {
+         issueLinks = Lists.newArrayList();
+
+        Properties properties = loadPropertiesFile("issuelinks.properties");
+
+        if (!properties.isEmpty()) {
+            String values = properties.getProperty("issuelinks");
+            issueLinks = Lists.newArrayList(Splitter.on(", ").split(values));
+        }
+    }
+
     private void loadIssueTypesAndStatuses() {
         issueTypesAndStatuses = Maps.newHashMap();
 
@@ -53,28 +82,6 @@ public class PropertyReader {
                 issueTypesAndStatuses.put(key, items);
             }
         }
-    }
-
-    public Map<String, List<String>> getIssueTypesAndStatuses() {
-        loadIssueTypesAndStatuses();
-        return issueTypesAndStatuses;
-    }
-
-    /**
-     *
-     * @return
-     */
-    public List<String> loadIssueLinks() {
-        List<String> links = Lists.newArrayList();
-
-        Properties properties = loadPropertiesFile("issuelinks.properties");
-
-        if (!properties.isEmpty()) {
-            String values = properties.getProperty("issuelinks");
-            links = Lists.newArrayList(Splitter.on(", ").split(values));
-        }
-
-        return links;
     }
 
     private Properties loadPropertiesFile(String filename) {

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017 Per Ivar Gjerløw
  * All rights reserved.
  *
@@ -12,21 +12,26 @@ import com.google.common.io.Files;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.karivar.utils.domain.BasicJiraIssue;
 import org.karivar.utils.domain.JiraIssue;
 import org.karivar.utils.domain.User;
 import org.karivar.utils.other.UTF8Control;
+import org.powermock.api.mockito.PowerMockito;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.util.*;
 
 import static org.junit.Assert.*;
 
+@RunWith(PowerMockRunner.class)
 public class CommitMessageManipulatorTest {
 
     private CommitMessageManipulator manipulator;
     private static  ResourceBundle resourceBundle;
-    private static String JIRA_ISSUE_PATTERNS = "EXAMPLE PR OTHER";
+    private static String JIRA_ISSUE_PATTERNS = "EXAMPLE PR ERROR";
     private static String PROCESSED_COMMIT_PATH = "src/test/resources/output.txt";
     private JiraIssue issue;
 
@@ -423,5 +428,198 @@ public class CommitMessageManipulatorTest {
         assertEquals("Hook v 1.0", commitFileContents.get(12));
     }
 
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageNormalCommitCorrectUsername() {
 
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertTrue("The issue is OK", status);
+
+    }
+
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageNormalCommitCorrectUsernameWrongStatus() {
+
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("To-Do")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertFalse("The issue is OK", status);
+
+    }
+
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageNormalCommitWrongUsername() {
+
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertFalse("The issue is OK", status);
+
+    }
+
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageNormalCommitWrongUsernameAndWrongStatus() {
+
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("Done")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertFalse("The issue is OK", status);
+    }
+
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageAssigneeOverridden() {
+
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/onelineassigneeoverridden.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setAssignee(Optional.of(new User("alice", "Alice Developer")))
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertTrue("The issue is OK", status);
+    }
+
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageAssigneeNotSet() {
+
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/onelineassigneeoverridden.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertTrue("The issue is OK", status);
+    }
+
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageOnelineNone() {
+
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/onelinenone.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertTrue("The issue is OK", status);
+    }
+
+    @Test
+    @PrepareForTest(GitConfig.class)
+    public void checkStateAndManipulateCommitMessageConnectionOverridden() {
+
+        PowerMockito.mockStatic(GitConfig.class);
+        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
+
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/onelinejiraconnectionoverridden.txt");
+
+        issue = new JiraIssueBuilder("EXAMPLE-1", "Add functionality for accounting")
+                .setStatus("In Progress")
+                .setIssueTypeName("Improvement")
+                .setSubtask(false)
+                .build();
+
+        boolean status = manipulator.checkStateAndManipulateCommitMessage(issue, false,
+                PROCESSED_COMMIT_PATH,"Hook v 1.0");
+        assertTrue("The issue is OK", status);
+    }
+
+    @Test
+    public void getJiraIssueKeyFromPattern() {
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/onlinenormalcommit.txt");
+
+        String key = manipulator.getJiraIssueKeyFromPattern(JIRA_ISSUE_PATTERNS);
+        assertNotNull(key);
+        assertEquals("EXAMPLE-1" , key);
+    }
+
+    @Test
+    public void getJiraIssueKeyFromPatternNotFoundInPattern() {
+        manipulator = new CommitMessageManipulator(resourceBundle);
+        manipulator.loadCommitMessage("src/test/resources/onlinenormalcommit.txt");
+
+        String key = manipulator.getJiraIssueKeyFromPattern("BUG");
+        assertNull(key);
+    }
 }

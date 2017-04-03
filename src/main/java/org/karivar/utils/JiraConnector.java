@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017 Per Ivar Gjerløw
  * All rights reserved.
  *
@@ -16,6 +16,7 @@ import com.atlassian.jira.rest.client.api.domain.IssueLink;
 import com.atlassian.jira.rest.client.internal.async.AsynchronousJiraRestClientFactory;
 import com.atlassian.util.concurrent.Promise;
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -44,7 +45,7 @@ public class JiraConnector {
      * @param jiraEncodedPassword the base46 encoded password
      * @param jiraAddress the JIRA address
      */
-    public void connectToJira( final String jiraUsername,
+    void connectToJira( final String jiraUsername,
                                  final String jiraEncodedPassword,
                                  final String jiraAddress) {
         if (jiraUsername != null && jiraEncodedPassword != null && jiraAddress != null) {
@@ -70,9 +71,15 @@ public class JiraConnector {
      * @return the fully populated JIRA issue
      * @throws IssueKeyNotFoundException in case of problems (connectivity, malformed messages, invalid argument, etc.)
      */
-    public JiraIssue getJiraPopulatedIssue(Optional<String> jiraIssueKey, List<String> issueLinks)
+    JiraIssue getJiraPopulatedIssue(Optional<String> jiraIssueKey, List<String> issueLinks)
             throws IssueKeyNotFoundException {
-        return mapJiraIssue(fetchBasicJiraIssue(jiraIssueKey), issueLinks);
+
+        String issueKey = null;
+
+        if (jiraIssueKey.isPresent()) {
+            issueKey = jiraIssueKey.get();
+        }
+        return mapJiraIssue(fetchBasicJiraIssue(issueKey), issueLinks);
     }
 
     private String getDecodedPassword(String jiraEncodedPassword) {
@@ -149,11 +156,9 @@ public class JiraConnector {
 
             while (issueLinkIterator.hasNext()) {
                 IssueLink issueLink = issueLinkIterator.next();
-                Iterator<String> issueLinkStringsIterator = issuesLinkList.iterator();
-                while (issueLinkStringsIterator.hasNext()) {
-                    String issueLinkTypeName = issueLinkStringsIterator.next();
+                for (String issueLinkTypeName : issuesLinkList) {
                     if (issueLink.getIssueLinkType().getName().equalsIgnoreCase(issueLinkTypeName)) {
-                        Optional<String> relatedIssueKey = Optional.of(issueLink.getTargetIssueKey());
+                        String relatedIssueKey = issueLink.getTargetIssueKey();
                         relatedIssueHolder = fetchBasicJiraIssue(relatedIssueKey);
                         relatedJiraIssues.add(relatedIssueHolder.getJiraIssue());
                     }
@@ -164,12 +169,12 @@ public class JiraConnector {
         return Lists.newArrayList();
     }
 
-    private JiraIssueHolder fetchBasicJiraIssue(Optional<String> jiraIssueKey) throws IssueKeyNotFoundException {
+    private JiraIssueHolder fetchBasicJiraIssue(String jiraIssueKey) throws IssueKeyNotFoundException {
         JiraIssueHolder holder = null;
 
-        if (issueRestClient != null && jiraIssueKey.isPresent()) {
+        if (issueRestClient != null && !Strings.isNullOrEmpty(jiraIssueKey)) {
             try {
-                Promise<Issue> issuePromise = issueRestClient.getIssue(jiraIssueKey.get());
+                Promise<Issue> issuePromise = issueRestClient.getIssue(jiraIssueKey);
                 Issue issue = issuePromise.claim();
 
                 BasicJiraIssue basicJiraIssue = new BasicJiraIssue(issue.getKey(), issue.getSummary());
@@ -187,7 +192,7 @@ public class JiraConnector {
                 if (e.getStatusCode().isPresent() && e.getStatusCode().get() == 404) {
                     // The issue doesn't exist
                     throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.404")
-                            + jiraIssueKey.get());
+                            + jiraIssueKey);
                 }
                 else e.printStackTrace();
             } catch (Exception e) {
