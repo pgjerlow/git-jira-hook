@@ -309,10 +309,10 @@ public class CommitMessageManipulator {
         if (populatedIssue != null
                 && populatedIssue.getAssignee() != null
                 && populatedIssue.getAssignee().isPresent()) {
-            String assignedUsername = populatedIssue.getAssignee().
-                    get().getName();
+            String assignedUsername = populatedIssue.getAssignee().get().getName();
 
-            if (GitConfig.getJiraUsername() != null && assignedUsername.equals(GitConfig.getJiraUsername())) {
+            if (!Strings.isNullOrEmpty(GitConfig.getJiraUsername())
+                    && assignedUsername.equals(GitConfig.getJiraUsername())) {
                 return true;
             }
         } else {

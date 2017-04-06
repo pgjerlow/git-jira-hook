@@ -9,24 +9,20 @@ package org.karivar.utils;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+import mockit.Expectations;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.karivar.utils.domain.BasicJiraIssue;
 import org.karivar.utils.domain.JiraIssue;
 import org.karivar.utils.domain.User;
 import org.karivar.utils.other.UTF8Control;
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.util.*;
 
 import static org.junit.Assert.*;
 
-@RunWith(PowerMockRunner.class)
 public class CommitMessageManipulatorTest {
 
     private CommitMessageManipulator manipulator;
@@ -429,11 +425,11 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
     public void checkStateAndManipulateCommitMessageNormalCommitCorrectUsername() {
 
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
+        new Expectations(GitConfig.class) {{
+            GitConfig.getJiraUsername(); result = "alice";
+        }};
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
@@ -452,11 +448,11 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
     public void checkStateAndManipulateCommitMessageNormalCommitCorrectUsernameWrongStatus() {
 
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
+        new Expectations(GitConfig.class) {{
+            GitConfig.getJiraUsername(); result = "alice";
+        }};
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
@@ -475,11 +471,11 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
     public void checkStateAndManipulateCommitMessageNormalCommitWrongUsername() {
 
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
+        new Expectations(GitConfig.class) {{
+            GitConfig.getJiraUsername(); result = "bob";
+        }};
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
@@ -498,11 +494,12 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
+
     public void checkStateAndManipulateCommitMessageNormalCommitWrongUsernameAndWrongStatus() {
 
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
+        new Expectations(GitConfig.class) {{
+            GitConfig.getJiraUsername(); result = "bob";
+        }};
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/multilinenormalcommit.txt");
@@ -520,11 +517,8 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
     public void checkStateAndManipulateCommitMessageAssigneeOverridden() {
 
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/onelineassigneeoverridden.txt");
@@ -542,11 +536,7 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
     public void checkStateAndManipulateCommitMessageAssigneeNotSet() {
-
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("bob");
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/onelineassigneeoverridden.txt");
@@ -563,11 +553,8 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
-    public void checkStateAndManipulateCommitMessageOnelineNone() {
 
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
+    public void checkStateAndManipulateCommitMessageOnelineNone() {
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/onelinenone.txt");
@@ -584,11 +571,7 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-    @PrepareForTest(GitConfig.class)
     public void checkStateAndManipulateCommitMessageConnectionOverridden() {
-
-        PowerMockito.mockStatic(GitConfig.class);
-        PowerMockito.when(GitConfig.getJiraUsername()).thenReturn("alice");
 
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/onelinejiraconnectionoverridden.txt");
