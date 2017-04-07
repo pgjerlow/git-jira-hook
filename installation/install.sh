@@ -77,7 +77,7 @@ fi
   then
      add_projectkey_response=Y
 
-     while [ $add_projectkey_response == Y -o $add_projectkey_response == y ]; do
+     while [ ${add_projectkey_response} == Y -o ${add_projectkey_response} == y ]; do
        echo ""
        read -p "Enter JIRA project key (e.g EXAMPLE): " jira_projectkey
 

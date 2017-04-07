@@ -22,7 +22,7 @@ import java.util.ResourceBundle;
 
 class PropertyReader {
 
-    private ResourceBundle messages;
+    private final ResourceBundle messages;
     private Map<String, List<String>> issueTypesAndStatuses;
     private List<String> issueLinks;
     private final Logger logger = LoggerFactory.getLogger(PropertyReader.class);

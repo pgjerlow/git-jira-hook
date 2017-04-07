@@ -11,8 +11,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 public class BasicJiraIssue {
-    private String key;
-    private String summary;
+    private final String key;
+    private final String summary;
 
     public BasicJiraIssue(String key, String summary) {
         this.key = key;
@@ -32,7 +32,7 @@ public class BasicJiraIssue {
         return getToStringHelper().toString();
     }
 
-    protected MoreObjects.ToStringHelper getToStringHelper() {
+    MoreObjects.ToStringHelper getToStringHelper() {
         return MoreObjects.toStringHelper(this).
                 add("JIRA issue key", key).
                 add("Summary", summary);

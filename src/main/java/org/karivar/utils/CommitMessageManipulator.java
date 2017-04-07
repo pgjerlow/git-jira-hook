@@ -28,14 +28,14 @@ import java.util.*;
  * This class is responsible for handling of the commit message. This includes reading, saving and extracting
  * information (e.g the given Jira issue key and options)
  */
-public class CommitMessageManipulator {
+class CommitMessageManipulator {
     private final Logger logger = LoggerFactory.getLogger(CommitMessageManipulator.class);
 
     private static final String JIRA_COMMUNICATION_OVERRIDDEN = "-O";
     private static final String JIRA_ASSIGNEE_OVERRIDDEN = "-A";
     private static final String JIRA_COMMIT_OVERRIDDEN = "NONE";
 
-    private ResourceBundle messages;
+    private final ResourceBundle messages;
     private String commitMessageFilename;
     private List<String> commitFileContents = null;
     private boolean jiraIssueKeyFound;

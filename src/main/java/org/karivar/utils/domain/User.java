@@ -11,8 +11,8 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 
 public class User {
-    private String name;
-    private String displayName;
+    private final String name;
+    private final String displayName;
 
     public User(String name, String displayName) {
         this.name = name;

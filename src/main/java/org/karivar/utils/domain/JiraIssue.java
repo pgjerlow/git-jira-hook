@@ -73,10 +73,6 @@ public class JiraIssue extends BasicJiraIssue {
         this.assignee = assignee;
     }
 
-    public Optional<String> getResolution() {
-        return resolution;
-    }
-
     public void setResolution(Optional<String> resolution) {
         this.resolution = resolution;
     }

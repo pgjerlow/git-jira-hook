@@ -1,11 +1,11 @@
-/**
+/*
  * Copyright (C) 2017 Per Ivar Gjerløw
  * All rights reserved.
  *
  * This software may be modified and distributed under the terms
  * of the MIT license.  See the LICENSE file for details.
  */
-package org.karivar.utils;
+package org.karivar.utils.utils;
 
 import org.karivar.utils.domain.BasicJiraIssue;
 import org.karivar.utils.domain.JiraIssue;
@@ -16,15 +16,14 @@ import java.util.Optional;
 
 public class JiraIssueBuilder {
 
-    private String newKey;
-    private String newDescription;
+    private final String newKey;
+    private final String newDescription;
     private String newStatus;
     private List<BasicJiraIssue> newRelatedIssues;
     private Optional<BasicJiraIssue> newParentIssue;
     private boolean newSubtask;
     private String newIssueTypeName;
     private Optional<User> newAssignee;
-    private Optional<String> newResolution;
 
     public JiraIssueBuilder(String key, String description) {
         this.newKey = key;
@@ -61,11 +60,6 @@ public class JiraIssueBuilder {
         return this;
     }
 
-    public JiraIssueBuilder setResolution(Optional<String> resolution) {
-        this.newResolution = resolution;
-        return this;
-    }
-
     public JiraIssue build() {
         JiraIssue issue = new JiraIssue(newKey, newDescription);
         issue.setStatus(newStatus);
@@ -74,7 +68,6 @@ public class JiraIssueBuilder {
         issue.setSubtask(newSubtask);
         issue.setIssueTypeName(newIssueTypeName);
         issue.setAssignee(newAssignee);
-        issue.setResolution(newResolution);
         return issue;
     }
 

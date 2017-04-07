@@ -29,13 +29,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 
-public class JiraConnector {
+class JiraConnector {
 
     private final Logger logger = LoggerFactory.getLogger(JiraConnector.class);
     private IssueRestClient issueRestClient;
-    private ResourceBundle messages;
+    private final ResourceBundle messages;
 
-    public JiraConnector(ResourceBundle bundle) {
+    JiraConnector(ResourceBundle bundle) {
        messages = bundle;
     }
 
@@ -83,7 +83,7 @@ public class JiraConnector {
     }
 
     private String getDecodedPassword(String jiraEncodedPassword) {
-        if (jiraEncodedPassword != null) {
+        if (!Strings.isNullOrEmpty(jiraEncodedPassword)) {
             byte[] passwordBytes = Base64.getDecoder().decode(jiraEncodedPassword);
             return new String(passwordBytes, Charsets.UTF_8);
         }
@@ -94,7 +94,7 @@ public class JiraConnector {
 
         URI jiraAddressUri = null;
         try {
-            if (jiraAddress != null) {
+            if (!Strings.isNullOrEmpty(jiraAddress)) {
                 jiraAddressUri = new URI(jiraAddress);
             }
         } catch (URISyntaxException e) {
@@ -194,12 +194,14 @@ public class JiraConnector {
                     throw new IssueKeyNotFoundException(messages.getString("error.jira.statuscode.404")
                             + jiraIssueKey);
                 }
-                else e.printStackTrace();
+                else {
+                    logger.error("Got unhandled RestClientException\n\t", e);
+                }
             } catch (Exception e) {
                 if (e.getCause() instanceof ConnectException) {
                     throw new IssueKeyNotFoundException(messages.getString("error.jira.connection.refused"));
                 } else {
-                    e.printStackTrace();
+                    logger.error("Got unhandled Exception\n\t", e);
                 }
             }
         }

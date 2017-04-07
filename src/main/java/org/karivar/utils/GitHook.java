@@ -14,7 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.*;
 
-public class GitHook {
+class GitHook {
     private static final String HOOK_VERSION = "0.5.2";
     private final Logger logger = LoggerFactory.getLogger(GitHook.class);
     private ResourceBundle messages;

@@ -17,6 +17,7 @@ import org.karivar.utils.domain.BasicJiraIssue;
 import org.karivar.utils.domain.JiraIssue;
 import org.karivar.utils.domain.User;
 import org.karivar.utils.other.UTF8Control;
+import org.karivar.utils.utils.JiraIssueBuilder;
 
 import java.io.File;
 import java.util.*;
@@ -27,8 +28,8 @@ public class CommitMessageManipulatorTest {
 
     private CommitMessageManipulator manipulator;
     private static  ResourceBundle resourceBundle;
-    private static String JIRA_ISSUE_PATTERNS = "EXAMPLE PR ERROR";
-    private static String PROCESSED_COMMIT_PATH = "src/test/resources/output.txt";
+    private static final String JIRA_ISSUE_PATTERNS = "EXAMPLE PR ERROR";
+    private static final String PROCESSED_COMMIT_PATH = "src/test/resources/output.txt";
     private JiraIssue issue;
 
     @BeforeClass
@@ -494,7 +495,6 @@ public class CommitMessageManipulatorTest {
     }
 
     @Test
-
     public void checkStateAndManipulateCommitMessageNormalCommitWrongUsernameAndWrongStatus() {
 
         new Expectations(GitConfig.class) {{
@@ -518,8 +518,6 @@ public class CommitMessageManipulatorTest {
 
     @Test
     public void checkStateAndManipulateCommitMessageAssigneeOverridden() {
-
-
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/onelineassigneeoverridden.txt");
 
@@ -537,7 +535,6 @@ public class CommitMessageManipulatorTest {
 
     @Test
     public void checkStateAndManipulateCommitMessageAssigneeNotSet() {
-
         manipulator = new CommitMessageManipulator(resourceBundle);
         manipulator.loadCommitMessage("src/test/resources/onelineassigneeoverridden.txt");
 
