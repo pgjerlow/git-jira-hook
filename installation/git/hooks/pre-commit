@@ -18,23 +18,24 @@ githooks_filepath=.git/hooks
 # Full name of the pre-built githook
 git_hook_new_filename=git-jira-hook-1.0.0.jar
 
-## The address of Nexus repository
-#NEXUS_ADDRESS=https://example.nexus.com
+## The address of Nexus repository and context path
+#NEXUS_ADDRESS=https://example.nexus.com/nexus
 #
-## The name of the Nexus repository where the githook is residing
+## The name of the Nexus repository where the githook is located
 #NEXUS_REPOSITORY_NAME=public
 
 # the root of the common path is the root of the project
 GITHOOK_COMMON_PATH=example_path
 
 # UNCOMMENT THESE LINES IF NEXUS IS USED BY YOUR ORGANIZATION TO HANDLE MAVEN FILES
+# NOTE: This method doesn't work for Nexus version 3.x at the moment due to known issue (https://issues.sonatype.org/browse/NEXUS-12531).
 ###################################### Download the latest from nexus repository #######################################
 
 #GITHOOK_MAVEN_GROUP_ID=org.karivar
 #GITHOOK_MAVEN_ARTIFACT_ID=git-jira-hook
 #
-# Download the SHA-1 checksum for the latest git hook version from Nexus
-#checksum_new_hook=` curl -s "${NEXUS_ADDRESS}/nexus/service/local/artifact/maven/resolve?g=${GITHOOK_MAVEN_GROUP_ID}&a=${GITHOOK_MAVEN_ARTIFACT_ID}&v=RELEASE&r=${NEXUS_REPOSITORY_NAME}" | grep sha1 | sed -e 's,.*<sha1>\([^<]*\)</sha1>.*,\1,g'`
+## Download the SHA-1 checksum for the latest git hook version from Nexus
+#checksum_new_hook=` curl -s "${NEXUS_ADDRESS}/service/local/artifact/maven/resolve?g=${GITHOOK_MAVEN_GROUP_ID}&a=${GITHOOK_MAVEN_ARTIFACT_ID}&v=RELEASE&r=${NEXUS_REPOSITORY_NAME}" | grep sha1 | sed -e 's,.*<sha1>\([^<]*\)</sha1>.*,\1,g'`
 #
 #checksum_existing_hook=`openssl dgst -sha1 ${githooks_filepath}/util/githook.jar | awk '{ print $2 }'`
 #
