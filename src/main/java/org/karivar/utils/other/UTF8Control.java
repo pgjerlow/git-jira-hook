@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (C) 2017 Per Ivar Gjerløw
  * All rights reserved.
  *
@@ -20,7 +20,7 @@ import java.util.ResourceBundle;
 
 /**
  * This class is an override to the default ResourceBundle control class to
- * handle properties containing special characters as UTF-8 instead of the default ISO8859-1 encoding.
+ * handle properties containing special characters as UTF-8 instead of the default ISO8859-1 encoding.<br>
  *
  * This implementation is a copy of the implementation DemkaAge/UTF8Control.java
  * at https://gist.github.com/DemkaAge/8999236
