@@ -5,7 +5,8 @@
 
 The git-jira hook is a small application which is installed on every developers' machine in order to check and control that checked-in code changes are linked to a correct JIRA issue according to configurable states.<br>
 The reason for using a component like this is to minimize the risk of code changes erroneously being delivered into production in the end.<br><br>
-This git-hook is implemented based on the experiences of similar component designed for several earlier engagements by me and other colleagues.
+This git-hook is implemented based on the experiences of similar component designed for several earlier engagements by me and initiated by kovatech.
+
 
 For more information, please visit:
 
